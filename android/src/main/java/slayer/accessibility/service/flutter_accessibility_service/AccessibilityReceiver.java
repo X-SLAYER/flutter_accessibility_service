@@ -22,12 +22,12 @@ public class AccessibilityReceiver extends BroadcastReceiver {
         /// Send data back via the Event Sink
         HashMap<String, Object> data = new HashMap<>();
         data.put("packageName", intent.getStringExtra(AccessibilityListener.ACCESSIBILITY_NAME));
-        data.put("eventType", intent.getStringExtra(AccessibilityListener.ACCESSIBILITY_EVENT_TYPE));
+        data.put("eventType", intent.getIntExtra(AccessibilityListener.ACCESSIBILITY_EVENT_TYPE, -1));
         data.put("capturedText", intent.getStringExtra(AccessibilityListener.ACCESSIBILITY_TEXT));
-        data.put("actionType", intent.getStringExtra(AccessibilityListener.ACCESSIBILITY_ACTION));
-        data.put("eventTime", intent.getStringExtra(AccessibilityListener.ACCESSIBILITY_EVENT_TIME));
-        data.put("contentChangeTypes", intent.getStringExtra(AccessibilityListener.ACCESSIBILITY_CHANGES_TYPES));
-        data.put("movementGranularity", intent.getStringExtra(AccessibilityListener.ACCESSIBILITY_MOVEMENT));
+        data.put("actionType", intent.getIntExtra(AccessibilityListener.ACCESSIBILITY_ACTION, -1));
+        data.put("eventTime", intent.getLongExtra(AccessibilityListener.ACCESSIBILITY_EVENT_TIME, -1));
+        data.put("contentChangeTypes", intent.getIntExtra(AccessibilityListener.ACCESSIBILITY_CHANGES_TYPES, -1));
+        data.put("movementGranularity", intent.getIntExtra(AccessibilityListener.ACCESSIBILITY_MOVEMENT, -1));
 
         eventSink.success(data);
     }

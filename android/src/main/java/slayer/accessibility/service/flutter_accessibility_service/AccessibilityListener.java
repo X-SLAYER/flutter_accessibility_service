@@ -3,7 +3,6 @@ package slayer.accessibility.service.flutter_accessibility_service;
 import android.accessibilityservice.AccessibilityService;
 import android.content.Intent;
 import android.os.Build;
-import android.util.Log;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.accessibility.AccessibilityWindowInfo;
@@ -29,8 +28,6 @@ public class AccessibilityListener extends AccessibilityService {
         }
 
         String packageName = parentNodeInfo.getPackageName().toString();
-
-        Log.d("X-SLAYER", packageName + "  :  " + eventType);
 
         Intent intent = new Intent(ACCESSIBILITY_INTENT);
         //Gets the package name of the source

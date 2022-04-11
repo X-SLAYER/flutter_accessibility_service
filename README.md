@@ -8,7 +8,7 @@ for more info check [Accessibility Service](https://developer.android.com/guide/
 
 ### Installation and usage ###
 
-Add multiavatar to your pubspec:
+Add package to your pubspec:
 
 ```yaml
 dependencies:
@@ -25,6 +25,7 @@ Inside AndroidManifest add this to bind your accessibility service with your app
             </intent-filter>
             <meta-data android:name="android.accessibilityservice" android:resource="@xml/accessibilityservice" />
         </service>
+    ...
 </application>
 
 ```

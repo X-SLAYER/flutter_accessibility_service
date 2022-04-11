@@ -3,7 +3,7 @@ import 'package:flutter_accessibility_service/constants.dart';
 class Utils {
   Utils._();
 
-  final Map<int, EventType> eventType = {
+  static final Map<int, EventType> eventType = {
     typesAllMask: EventType.typesAllMask,
     typeAnnouncement: EventType.typeAnnouncement,
     typeAssistReadingContext: EventType.typeAssistReadingContext,
