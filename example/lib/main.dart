@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_accessibility_service/accessibility_event.dart';
 
 import 'package:flutter_accessibility_service/flutter_accessibility_service.dart';
 
@@ -16,6 +18,9 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
+  StreamSubscription<AccessibilityEvent?>? _subscription;
+  List<AccessibilityEvent?> events = [];
+
   @override
   void initState() {
     super.initState();
@@ -30,33 +35,61 @@ class _MyAppState extends State<MyApp> {
         ),
         body: Center(
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              TextButton(
-                onPressed: () async {
-                  await FlutterAccessibilityService
-                      .requestAccessibilityPermission();
-                },
-                child: const Text("Request Permission"),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    TextButton(
+                      onPressed: () async {
+                        await FlutterAccessibilityService
+                            .requestAccessibilityPermission();
+                      },
+                      child: const Text("Request Permission"),
+                    ),
+                    const SizedBox(height: 20.0),
+                    TextButton(
+                      onPressed: () async {
+                        final bool res = await FlutterAccessibilityService
+                            .isAccessibilityPermissionEnabled();
+                        log("Is enabled: $res");
+                      },
+                      child: const Text("Check Permission"),
+                    ),
+                    const SizedBox(height: 20.0),
+                    TextButton(
+                      onPressed: () {
+                        _subscription = FlutterAccessibilityService.accessStream
+                            .listen((event) {
+                          log("$event");
+                          setState(() {
+                            events.add(event);
+                          });
+                        });
+                      },
+                      child: const Text("Start Stream"),
+                    ),
+                    const SizedBox(height: 20.0),
+                    TextButton(
+                      onPressed: () {
+                        _subscription?.cancel();
+                      },
+                      child: const Text("Stop Stream"),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 20.0),
-              TextButton(
-                onPressed: () async {
-                  final bool res = await FlutterAccessibilityService
-                      .isAccessibilityPermissionEnabled();
-                  log("Is enabled: $res");
-                },
-                child: const Text("Check Permission"),
-              ),
-              const SizedBox(height: 20.0),
-              TextButton(
-                onPressed: () {
-                  FlutterAccessibilityService.accessStream.listen((event) {
-                    log("Current Event: $event");
-                  });
-                },
-                child: const Text("Start Stream"),
-              ),
+              Expanded(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: events.length,
+                  itemBuilder: (_, index) => ListTile(
+                    title: Text(events[index]!.packageName!),
+                    subtitle: Text(events[index]!.capturedText ?? ""),
+                  ),
+                ),
+              )
             ],
           ),
         ),
