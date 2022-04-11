@@ -1,7 +1,7 @@
 name: flutter_accessibility_service
-description: A new flutter plugin project.
+description: Flutter plugin for interacting with Accessibility Service in Android.
 version: 0.0.1
-homepage:
+homepage: https://github.com/X-SLAYER/flutter_accessibility_service
 
 environment:
   sdk: ">=2.16.2 <3.0.0"
