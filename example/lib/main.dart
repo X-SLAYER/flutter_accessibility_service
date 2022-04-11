@@ -30,6 +30,7 @@ class _MyAppState extends State<MyApp> {
         ),
         body: Center(
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               TextButton(
                 onPressed: () async {
