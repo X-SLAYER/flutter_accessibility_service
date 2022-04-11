@@ -42,7 +42,7 @@ class _MyAppState extends State<MyApp> {
               const SizedBox(height: 20.0),
               TextButton(
                 onPressed: () async {
-                  final res = await FlutterAccessibilityService
+                  final bool res = await FlutterAccessibilityService
                       .isAccessibilityPermissionEnabled();
                   log("Is enabled: $res");
                 },
