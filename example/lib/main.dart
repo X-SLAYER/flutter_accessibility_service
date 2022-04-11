@@ -55,7 +55,7 @@ class _MyAppState extends State<MyApp> {
                     log("Current Event: $event");
                   });
                 },
-                child: const Text("Request Permission"),
+                child: const Text("Start Stream"),
               ),
             ],
           ),

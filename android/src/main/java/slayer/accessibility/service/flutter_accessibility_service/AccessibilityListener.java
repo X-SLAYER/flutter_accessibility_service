@@ -16,7 +16,7 @@ public class AccessibilityListener extends AccessibilityService {
     public static String ACCESSIBILITY_TEXT = "capturedText";
     public static String ACCESSIBILITY_ACTION = "action";
     public static String ACCESSIBILITY_EVENT_TIME = "eventTime";
-    public static String ACCESSIBILITY_CHANGES_TYPES= "contentChangeTypes";
+    public static String ACCESSIBILITY_CHANGES_TYPES = "contentChangeTypes";
     public static String ACCESSIBILITY_MOVEMENT = "movementGranularity";
 
     @Override
@@ -29,7 +29,6 @@ public class AccessibilityListener extends AccessibilityService {
         }
 
         String packageName = parentNodeInfo.getPackageName().toString();
-        String capturedText = parentNodeInfo.getText().toString();
 
         Log.d("X-SLAYER", packageName + "  :  " + eventType);
 
@@ -48,9 +47,9 @@ public class AccessibilityListener extends AccessibilityService {
             //Gets the bit mask of change types signaled by a TYPE_WINDOW_CONTENT_CHANGED event or TYPE_WINDOW_STATE_CHANGED. A single event may represent multiple change types.
             intent.putExtra(ACCESSIBILITY_CHANGES_TYPES, accessibilityEvent.getContentChangeTypes());
         }
-        if (capturedText != null) {
+        if (parentNodeInfo.getText() != null) {
             //Gets the text of this node.
-            intent.putExtra(ACCESSIBILITY_TEXT, capturedText);
+            intent.putExtra(ACCESSIBILITY_TEXT, parentNodeInfo.getText().toString());
         }
         sendBroadcast(intent);
     }
