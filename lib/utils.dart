@@ -3,6 +3,21 @@ import 'package:flutter_accessibility_service/constants.dart';
 class Utils {
   Utils._();
 
+  static final Map<int, ContentChangeTypes?> changeType = {
+    contentChangeTypeContentDescription:
+        ContentChangeTypes.contentChangeTypeContentDescription,
+    contentChangeTypePaneAppeared:
+        ContentChangeTypes.contentChangeTypePaneAppeared,
+    contentChangeTypePaneDisappeared:
+        ContentChangeTypes.contentChangeTypePaneDisappeared,
+    contentChangeTypePaneTitle: ContentChangeTypes.contentChangeTypePaneTitle,
+    contentChangeTypeStateDescription:
+        ContentChangeTypes.contentChangeTypeStateDescription,
+    contentChangeTypeSubtree: ContentChangeTypes.contentChangeTypeSubtree,
+    contentChangeTypeText: ContentChangeTypes.contentChangeTypeText,
+    contentChangeTypeUndefined: ContentChangeTypes.contentChangeTypeUndefined,
+  };
+
   static final Map<int, EventType> eventType = {
     typesAllMask: EventType.typesAllMask,
     typeAnnouncement: EventType.typeAnnouncement,

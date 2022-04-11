@@ -25,7 +25,7 @@ class AccessibilityEvent {
 
   /// the bit mask of change types signaled by a `TYPE_WINDOW_CONTENT_CHANGED` event or `TYPE_WINDOW_STATE_CHANGED`. A single event may represent multiple change types
   /// https://developer.android.com/reference/android/view/accessibility/AccessibilityEvent#getContentChangeTypes()
-  int? contentChangeTypes;
+  ContentChangeTypes? contentChangeTypes;
 
   /// the movement granularity that was traversed
   /// https://developer.android.com/reference/android/view/accessibility/AccessibilityEvent#getMovementGranularity()
@@ -48,20 +48,15 @@ class AccessibilityEvent {
     eventType =
         map['eventType'] == null ? null : Utils.eventType[map['eventType']];
     capturedText = map['capturedText'];
-    contentChangeTypes = map['contentChangeTypes'];
+    contentChangeTypes = map['contentChangeTypes'] == null
+        ? null
+        : (Utils.changeType[map['contentChangeTypes']] ??
+            ContentChangeTypes.others);
     movementGranularity = map['movementGranularity'];
   }
 
   @override
   String toString() {
-    return '''AccessibilityEvent: (
-      Action Type: $actionType
-      Event Time: $eventTime
-      Package Name: $packageName
-      Event Type: $eventType
-      Captured Text: $capturedText
-      content Change Types: $contentChangeTypes
-      Movement Granularity: $movementGranularity
-    )''';
+    return 'AccessibilityEvent: ( Action Type: $actionType - Event Time: $eventTime - Package Name: $packageName - Event Type: $eventType - Captured Text: $capturedText - content Change Types: $contentChangeTypes - Movement Granularity: $movementGranularity )';
   }
 }

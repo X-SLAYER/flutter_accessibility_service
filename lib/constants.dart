@@ -27,6 +27,18 @@ enum EventType {
   typeWindowStateChanged,
 }
 
+enum ContentChangeTypes {
+  contentChangeTypeContentDescription,
+  contentChangeTypePaneAppeared,
+  contentChangeTypePaneDisappeared,
+  contentChangeTypePaneTitle,
+  contentChangeTypeStateDescription,
+  contentChangeTypeSubtree,
+  contentChangeTypeText,
+  contentChangeTypeUndefined,
+  others,
+}
+
 const int typesAllMask = -1;
 const int typeAnnouncement = 16384;
 const int typeAssistReadingContext = 16777216;
@@ -53,3 +65,12 @@ const int typeViewTextTraversedAtMovementGranularity = 131072;
 const int typeWindowsChanged = 4194304;
 const int typeWindowContentChanged = 2048;
 const int typeWindowStateChanged = 32;
+// -------- content change types
+const int contentChangeTypeContentDescription = 4;
+const int contentChangeTypePaneAppeared = 16;
+const int contentChangeTypePaneDisappeared = 32;
+const int contentChangeTypePaneTitle = 8;
+const int contentChangeTypeStateDescription = 64;
+const int contentChangeTypeSubtree = 1;
+const int contentChangeTypeText = 2;
+const int contentChangeTypeUndefined = 0;
