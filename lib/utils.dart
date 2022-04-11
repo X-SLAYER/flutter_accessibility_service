@@ -3,6 +3,14 @@ import 'package:flutter_accessibility_service/constants.dart';
 class Utils {
   Utils._();
 
+  static final Map<int, WindowType> windowType = {
+    typeAccessibilityOverlay: WindowType.typeAccessibilityOverlay,
+    typeApplication: WindowType.typeApplication,
+    typeInputMethod: WindowType.typeInputMethod,
+    typeSplitScreenDivider: WindowType.typeSplitScreenDivider,
+    typeSystem: WindowType.typeSystem,
+  };
+
   static final Map<int, ContentChangeTypes?> changeType = {
     contentChangeTypeContentDescription:
         ContentChangeTypes.contentChangeTypeContentDescription,

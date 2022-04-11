@@ -31,6 +31,22 @@ class AccessibilityEvent {
   /// https://developer.android.com/reference/android/view/accessibility/AccessibilityEvent#getMovementGranularity()
   int? movementGranularity;
 
+  /// the type of the window
+  /// https://developer.android.com/reference/android/view/accessibility/AccessibilityWindowInfo#getType()
+  WindowType? windowType;
+
+  /// check if this window is active. An active window is the one the user is currently touching or the window has input focus and the user is not touching any window.
+  /// https://developer.android.com/reference/android/view/accessibility/AccessibilityWindowInfo#getType()
+  bool? isActive;
+
+  /// check if this window has input focus.
+  /// https://developer.android.com/reference/android/view/accessibility/AccessibilityWindowInfo#isFocused()
+  bool? isFocused;
+
+  /// Check if the window is in picture-in-picture mode.
+  /// https://developer.android.com/reference/android/view/accessibility/AccessibilityWindowInfo#isInPictureInPictureMode()
+  bool? isPip;
+
   AccessibilityEvent({
     this.actionType,
     this.eventTime,
@@ -39,6 +55,10 @@ class AccessibilityEvent {
     this.capturedText,
     this.contentChangeTypes,
     this.movementGranularity,
+    this.windowType,
+    this.isActive,
+    this.isFocused,
+    this.isPip,
   });
 
   AccessibilityEvent.fromMap(Map<dynamic, dynamic> map) {
@@ -53,10 +73,27 @@ class AccessibilityEvent {
         : (Utils.changeType[map['contentChangeTypes']] ??
             ContentChangeTypes.others);
     movementGranularity = map['movementGranularity'];
+    windowType =
+        map['windowType'] == null ? null : Utils.windowType[map['windowType']];
+    isActive = map['isActive'];
+    isFocused = map['isFocused'];
+    isPip = map['isPip'];
   }
 
   @override
   String toString() {
-    return 'AccessibilityEvent: ( Action Type: $actionType - Event Time: $eventTime - Package Name: $packageName - Event Type: $eventType - Captured Text: $capturedText - content Change Types: $contentChangeTypes - Movement Granularity: $movementGranularity )';
+    return '''AccessibilityEvent: (
+      Action Type: $actionType 
+       Event Time: $eventTime 
+       Package Name: $packageName 
+       Event Type: $eventType 
+       Captured Text: $capturedText 
+       content Change Types: $contentChangeTypes 
+       Movement Granularity: $movementGranularity
+       Is Active: $isActive
+       is focused: $isFocused
+       in Pip: $isPip
+       window Type: $windowType
+       )''';
   }
 }

@@ -28,6 +28,10 @@ public class AccessibilityReceiver extends BroadcastReceiver {
         data.put("eventTime", intent.getLongExtra(AccessibilityListener.ACCESSIBILITY_EVENT_TIME, -1));
         data.put("contentChangeTypes", intent.getIntExtra(AccessibilityListener.ACCESSIBILITY_CHANGES_TYPES, -1));
         data.put("movementGranularity", intent.getIntExtra(AccessibilityListener.ACCESSIBILITY_MOVEMENT, -1));
+        data.put("isActive", intent.getBooleanExtra(AccessibilityListener.ACCESSIBILITY_IS_ACTIVE, false));
+        data.put("isFocused", intent.getBooleanExtra(AccessibilityListener.ACCESSIBILITY_IS_FOCUSED, false));
+        data.put("isPip", intent.getBooleanExtra(AccessibilityListener.ACCESSIBILITY_IS_PIP, false));
+        data.put("windowType", intent.getIntExtra(AccessibilityListener.ACCESSIBILITY_WINDOW_TYPE, -1));
 
         eventSink.success(data);
     }

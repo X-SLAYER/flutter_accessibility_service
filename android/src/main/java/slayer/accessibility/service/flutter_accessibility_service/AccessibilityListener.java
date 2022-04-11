@@ -17,14 +17,23 @@ public class AccessibilityListener extends AccessibilityService {
     public static String ACCESSIBILITY_EVENT_TIME = "eventTime";
     public static String ACCESSIBILITY_CHANGES_TYPES = "contentChangeTypes";
     public static String ACCESSIBILITY_MOVEMENT = "movementGranularity";
+    public static String ACCESSIBILITY_IS_ACTIVE = "isActive";
+    public static String ACCESSIBILITY_IS_FOCUSED = "isFocused";
+    public static String ACCESSIBILITY_IS_PIP = "isInPictureInPictureMode";
+    public static String ACCESSIBILITY_WINDOW_TYPE = "windowType";
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent accessibilityEvent) {
         final int eventType = accessibilityEvent.getEventType();
         AccessibilityNodeInfo parentNodeInfo = accessibilityEvent.getSource();
+        AccessibilityWindowInfo windowInfo = null;
 
         if (parentNodeInfo == null) {
             return;
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            windowInfo = parentNodeInfo.getWindow();
         }
 
         String packageName = parentNodeInfo.getPackageName().toString();
@@ -47,6 +56,21 @@ public class AccessibilityListener extends AccessibilityService {
         if (parentNodeInfo.getText() != null) {
             //Gets the text of this node.
             intent.putExtra(ACCESSIBILITY_TEXT, parentNodeInfo.getText().toString());
+        }
+        if (windowInfo != null) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                // Gets if this window is active.
+                intent.putExtra(ACCESSIBILITY_IS_ACTIVE, windowInfo.isActive());
+                // Gets if this window has input focus.
+                intent.putExtra(ACCESSIBILITY_IS_FOCUSED, windowInfo.isFocused());
+                // Gets the type of the window.
+                intent.putExtra(ACCESSIBILITY_WINDOW_TYPE, windowInfo.getType());
+                // Check if the window is in picture-in-picture mode.
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    intent.putExtra(ACCESSIBILITY_IS_PIP, windowInfo.isInPictureInPictureMode());
+                }
+
+            }
         }
         sendBroadcast(intent);
     }

@@ -11,13 +11,15 @@ import 'package:flutter/services.dart';
 import 'package:flutter_accessibility_service/accessibility_event.dart';
 
 class FlutterAccessibilityService {
+  FlutterAccessibilityService._();
+
   static const MethodChannel _methodeChannel =
       MethodChannel('x-slayer/accessibility_channel');
   static const EventChannel _eventChannel =
       EventChannel('x-slayer/accessibility_event');
   static Stream<AccessibilityEvent?> _stream = const Stream.empty();
 
-  /// stream incoming Accessibility events
+  /// stream the incoming Accessibility events
   static Stream<AccessibilityEvent?> get accessStream {
     if (Platform.isAndroid) {
       _stream = _eventChannel.receiveBroadcastStream().map<AccessibilityEvent?>(
