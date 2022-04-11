@@ -18,12 +18,17 @@ public class AccessibilityReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        /// Unpack intent contents
-        String packageName = intent.getStringExtra(AccessibilityListener.ACCESSIBILITY_NAME);
 
         /// Send data back via the Event Sink
         HashMap<String, Object> data = new HashMap<>();
-        data.put("packageName", packageName);
+        data.put("packageName", intent.getStringExtra(AccessibilityListener.ACCESSIBILITY_NAME));
+        data.put("eventType", intent.getStringExtra(AccessibilityListener.ACCESSIBILITY_EVENT_TYPE));
+        data.put("capturedText", intent.getStringExtra(AccessibilityListener.ACCESSIBILITY_TEXT));
+        data.put("actionType", intent.getStringExtra(AccessibilityListener.ACCESSIBILITY_ACTION));
+        data.put("eventTime", intent.getStringExtra(AccessibilityListener.ACCESSIBILITY_EVENT_TIME));
+        data.put("contentChangeTypes", intent.getStringExtra(AccessibilityListener.ACCESSIBILITY_CHANGES_TYPES));
+        data.put("movementGranularity", intent.getStringExtra(AccessibilityListener.ACCESSIBILITY_MOVEMENT));
+
         eventSink.success(data);
     }
 }

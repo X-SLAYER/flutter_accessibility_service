@@ -41,6 +41,15 @@ class _MyAppState extends State<MyApp> {
               ),
               const SizedBox(height: 20.0),
               TextButton(
+                onPressed: () async {
+                  final res = await FlutterAccessibilityService
+                      .isAccessibilityPermissionEnabled();
+                  log("Is enabled: $res");
+                },
+                child: const Text("Check Permission"),
+              ),
+              const SizedBox(height: 20.0),
+              TextButton(
                 onPressed: () {
                   FlutterAccessibilityService.accessStream.listen((event) {
                     log("Current Event: $event");

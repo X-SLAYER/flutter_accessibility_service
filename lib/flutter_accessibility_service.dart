@@ -16,6 +16,7 @@ class FlutterAccessibilityService {
       EventChannel('x-slayer/accessibility_event');
   static Stream<dynamic> _stream = const Stream.empty();
 
+  /// stream incoming Accessibility events
   static Stream get accessStream {
     if (Platform.isAndroid) {
       _stream =
@@ -25,11 +26,24 @@ class FlutterAccessibilityService {
     throw Exception("Accessibility API exclusively available on Android!");
   }
 
+  /// request accessibility permession
+  /// it will open the accessibility settings page
   static Future<void> requestAccessibilityPermission() async {
     try {
       await _methodeChannel.invokeMethod('requestAccessibilityPermission');
     } on PlatformException catch (error) {
       log("$error");
+    }
+  }
+
+  /// check if accessibility permession is enebaled
+  static Future<bool> isAccessibilityPermissionEnabled() async {
+    try {
+      return await _methodeChannel
+          .invokeMethod('isAccessibilityPermissionEnabled');
+    } on PlatformException catch (error) {
+      log("$error");
+      return false;
     }
   }
 }
