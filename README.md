@@ -4,7 +4,7 @@ a plugin for interacting with Accessibility Service in Android.
 
 Accessibility services are intended to assist users with disabilities in using Android devices and apps, or I can say to get android os events like keyboard key press events or notification received events etc.
 
-for more info check [Accessibility Service](https://developer.android.com/guide/topics/ui/accessibility/)
+for more info check [Accessibility Service](https://developer.android.com/reference/android/accessibilityservice/AccessibilityService)
 
 ### Installation and usage ###
 
