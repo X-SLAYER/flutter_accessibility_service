@@ -120,7 +120,7 @@ class ScreenBounds {
     this.bottom,
   });
 
-  ScreenBounds.fromMap(Map<String, dynamic> json) {
+  ScreenBounds.fromMap(Map<dynamic, dynamic> json) {
     right = json['right'];
     top = json['top'];
     left = json['left'];
