@@ -47,6 +47,10 @@ class AccessibilityEvent {
   /// https://developer.android.com/reference/android/view/accessibility/AccessibilityWindowInfo#isInPictureInPictureMode()
   bool? isPip;
 
+  /// Gets the node bounds in screen coordinates.
+  /// https://developer.android.com/reference/android/view/accessibility/AccessibilityNodeInfo#getBoundsInScreen(android.graphics.Rect)
+  ScreenBounds? screenBounds;
+
   AccessibilityEvent({
     this.actionType,
     this.eventTime,
@@ -59,6 +63,7 @@ class AccessibilityEvent {
     this.isActive,
     this.isFocused,
     this.isPip,
+    this.screenBounds,
   });
 
   AccessibilityEvent.fromMap(Map<dynamic, dynamic> map) {
@@ -78,12 +83,15 @@ class AccessibilityEvent {
     isActive = map['isActive'];
     isFocused = map['isFocused'];
     isPip = map['isPip'];
+    screenBounds = map['screenBounds'] != null
+        ? ScreenBounds.fromMap(map['screenBounds'])
+        : null;
   }
 
   @override
   String toString() {
     return '''AccessibilityEvent: (
-      Action Type: $actionType 
+       Action Type: $actionType 
        Event Time: $eventTime 
        Package Name: $packageName 
        Event Type: $eventType 
@@ -94,6 +102,33 @@ class AccessibilityEvent {
        is focused: $isFocused
        in Pip: $isPip
        window Type: $windowType
+       Screen bounds: $screenBounds
        )''';
+  }
+}
+
+class ScreenBounds {
+  int? right;
+  int? top;
+  int? left;
+  int? bottom;
+
+  ScreenBounds({
+    this.right,
+    this.top,
+    this.left,
+    this.bottom,
+  });
+
+  ScreenBounds.fromMap(Map<String, dynamic> json) {
+    right = json['right'];
+    top = json['top'];
+    left = json['left'];
+    bottom = json['bottom'];
+  }
+
+  @override
+  String toString() {
+    return "left: $left - right: $right - top: $top - bottom: $bottom";
   }
 }

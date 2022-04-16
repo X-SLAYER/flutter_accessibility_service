@@ -26,12 +26,14 @@ class FlutterAccessibilityService {
   }
 
   /// request accessibility permission
-  /// it will open the accessibility settings page
-  static Future<void> requestAccessibilityPermission() async {
+  /// it will open the accessibility settings page and return `true` once the permission granted.
+  static Future<bool> requestAccessibilityPermission() async {
     try {
-      await _methodeChannel.invokeMethod('requestAccessibilityPermission');
+      return await _methodeChannel
+          .invokeMethod('requestAccessibilityPermission');
     } on PlatformException catch (error) {
       log("$error");
+      return Future.value(false);
     }
   }
 

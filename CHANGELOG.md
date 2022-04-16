@@ -2,3 +2,8 @@
 
 * Ininial release
 
+## 0.0.2
+
+* add node bounds in screen coordinates
+* upgrade requestAccessibilityPermission to wait for the result
+

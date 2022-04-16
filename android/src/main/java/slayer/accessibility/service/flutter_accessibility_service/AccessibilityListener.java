@@ -2,10 +2,14 @@ package slayer.accessibility.service.flutter_accessibility_service;
 
 import android.accessibilityservice.AccessibilityService;
 import android.content.Intent;
+import android.graphics.Rect;
 import android.os.Build;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.accessibility.AccessibilityWindowInfo;
+
+import java.util.HashMap;
+
 
 public class AccessibilityListener extends AccessibilityService {
 
@@ -21,6 +25,7 @@ public class AccessibilityListener extends AccessibilityService {
     public static String ACCESSIBILITY_IS_FOCUSED = "isFocused";
     public static String ACCESSIBILITY_IS_PIP = "isInPictureInPictureMode";
     public static String ACCESSIBILITY_WINDOW_TYPE = "windowType";
+    public static String ACCESSIBILITY_SCREEN_BOUNDS = "screenBounds";
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent accessibilityEvent) {
@@ -32,11 +37,12 @@ public class AccessibilityListener extends AccessibilityService {
             return;
         }
 
+
+        String packageName = parentNodeInfo.getPackageName().toString();
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             windowInfo = parentNodeInfo.getWindow();
         }
-
-        String packageName = parentNodeInfo.getPackageName().toString();
 
         Intent intent = new Intent(ACCESSIBILITY_INTENT);
         //Gets the package name of the source
@@ -49,6 +55,12 @@ public class AccessibilityListener extends AccessibilityService {
         intent.putExtra(ACCESSIBILITY_EVENT_TIME, accessibilityEvent.getEventTime());
         //Gets the movement granularity that was traversed.
         intent.putExtra(ACCESSIBILITY_MOVEMENT, accessibilityEvent.getMovementGranularity());
+
+        // Gets the node bounds in screen coordinates.
+        Rect rect = new Rect();
+        parentNodeInfo.getBoundsInScreen(rect);
+        intent.putExtra(ACCESSIBILITY_SCREEN_BOUNDS, getBoundingPoints(rect));
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
             //Gets the bit mask of change types signaled by a TYPE_WINDOW_CONTENT_CHANGED event or TYPE_WINDOW_STATE_CHANGED. A single event may represent multiple change types.
             intent.putExtra(ACCESSIBILITY_CHANGES_TYPES, accessibilityEvent.getContentChangeTypes());
@@ -73,6 +85,15 @@ public class AccessibilityListener extends AccessibilityService {
             }
         }
         sendBroadcast(intent);
+    }
+
+    private HashMap<String, Integer> getBoundingPoints(Rect rect) {
+        HashMap<String, Integer> frame = new HashMap<>();
+        frame.put("left", rect.left);
+        frame.put("right", rect.right);
+        frame.put("top", rect.top);
+        frame.put("bottom", rect.bottom);
+        return frame;
     }
 
     @Override

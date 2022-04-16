@@ -24,7 +24,6 @@ public class Utils {
                 mStringColonSplitter.setString(settingValue);
                 while (mStringColonSplitter.hasNext()) {
                     String accessibilityService = mStringColonSplitter.next();
-
                     if (accessibilityService.equalsIgnoreCase(service)) {
                         return true;
                     }

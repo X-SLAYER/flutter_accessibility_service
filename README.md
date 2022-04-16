@@ -53,8 +53,8 @@ Create Accesiblity config file named `accessibilityservice.xml` inside `res/xml`
  final bool status = await FlutterAccessibilityService.isAccessibilityPermissionEnabled();
  
  /// request accessibility permission
- /// it will open the accessibility settings page
- await FlutterAccessibilityService.requestAccessibilityPermission();
+ /// it will open the accessibility settings page and return `true` once the permission granted.
+ final bool status = await FlutterAccessibilityService.requestAccessibilityPermission();
  
  /// stream the incoming Accessibility events
   FlutterAccessibilityService.accessStream.listen((event) {

@@ -18,7 +18,6 @@ public class AccessibilityReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
-
         /// Send data back via the Event Sink
         HashMap<String, Object> data = new HashMap<>();
         data.put("packageName", intent.getStringExtra(AccessibilityListener.ACCESSIBILITY_NAME));
@@ -32,7 +31,7 @@ public class AccessibilityReceiver extends BroadcastReceiver {
         data.put("isFocused", intent.getBooleanExtra(AccessibilityListener.ACCESSIBILITY_IS_FOCUSED, false));
         data.put("isPip", intent.getBooleanExtra(AccessibilityListener.ACCESSIBILITY_IS_PIP, false));
         data.put("windowType", intent.getIntExtra(AccessibilityListener.ACCESSIBILITY_WINDOW_TYPE, -1));
-
+        data.put("screenBounds", intent.getSerializableExtra(AccessibilityListener.ACCESSIBILITY_SCREEN_BOUNDS));
         eventSink.success(data);
     }
 }
