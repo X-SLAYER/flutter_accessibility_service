@@ -114,6 +114,9 @@ The `AccessibilityEvent` provides:
   
   /// Check if the window is in picture-in-picture mode.
   bool? isPip;
+
+  /// Gets the node bounds in screen coordinates.
+  ScreenBounds? screenBounds;
 ```
 
 for each event.
