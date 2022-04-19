@@ -93,6 +93,8 @@ public class AccessibilityListener extends AccessibilityService {
         frame.put("right", rect.right);
         frame.put("top", rect.top);
         frame.put("bottom", rect.bottom);
+        frame.put("width", rect.width());
+        frame.put("height", rect.height());
         return frame;
     }
 

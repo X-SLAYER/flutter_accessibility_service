@@ -112,12 +112,16 @@ class ScreenBounds {
   int? top;
   int? left;
   int? bottom;
+  int? width;
+  int? height;
 
   ScreenBounds({
     this.right,
     this.top,
     this.left,
     this.bottom,
+    this.width,
+    this.height,
   });
 
   ScreenBounds.fromMap(Map<dynamic, dynamic> json) {
@@ -125,10 +129,12 @@ class ScreenBounds {
     top = json['top'];
     left = json['left'];
     bottom = json['bottom'];
+    width = json['width'];
+    height = json['height'];
   }
 
   @override
   String toString() {
-    return "left: $left - right: $right - top: $top - bottom: $bottom";
+    return "left: $left - right: $right - top: $top - bottom: $bottom - width: $width - height: $height";
   }
 }
