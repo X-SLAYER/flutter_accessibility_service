@@ -12,15 +12,16 @@ class FlutterAccessibilityService {
       MethodChannel('x-slayer/accessibility_channel');
   static const EventChannel _eventChannel =
       EventChannel('x-slayer/accessibility_event');
-  static Stream<AccessibilityEvent?> _stream = const Stream.empty();
+  static Stream<AccessibilityEvent>? _stream;
 
   /// stream the incoming Accessibility events
-  static Stream<AccessibilityEvent?> get accessStream {
+  static Stream<AccessibilityEvent> get accessStream {
     if (Platform.isAndroid) {
-      _stream = _eventChannel.receiveBroadcastStream().map<AccessibilityEvent?>(
-            (event) => AccessibilityEvent.fromMap(event),
-          );
-      return _stream;
+      _stream ??=
+          _eventChannel.receiveBroadcastStream().map<AccessibilityEvent>(
+                (event) => AccessibilityEvent.fromMap(event),
+              );
+      return _stream!;
     }
     throw Exception("Accessibility API exclusively available on Android!");
   }

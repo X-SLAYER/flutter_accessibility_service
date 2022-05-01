@@ -18,7 +18,7 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  StreamSubscription<AccessibilityEvent?>? _subscription;
+  StreamSubscription<AccessibilityEvent>? _subscription;
   List<AccessibilityEvent?> events = [];
 
   @override
@@ -60,6 +60,10 @@ class _MyAppState extends State<MyApp> {
                     const SizedBox(height: 20.0),
                     TextButton(
                       onPressed: () {
+                        if (_subscription?.isPaused ?? false) {
+                          _subscription?.resume();
+                          return;
+                        }
                         _subscription = FlutterAccessibilityService.accessStream
                             .listen((event) {
                           log("$event");

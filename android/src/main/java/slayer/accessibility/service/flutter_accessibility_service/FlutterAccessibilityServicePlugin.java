@@ -28,6 +28,7 @@ public class FlutterAccessibilityServicePlugin implements FlutterPlugin, Activit
     private static final String EVENT_TAG = "x-slayer/accessibility_event";
 
     private MethodChannel channel;
+    private AccessibilityReceiver accessibilityReceiver;
     private EventChannel eventChannel;
     private Context context;
     private Activity mActivity;
@@ -38,10 +39,8 @@ public class FlutterAccessibilityServicePlugin implements FlutterPlugin, Activit
     @Override
     public void onAttachedToEngine(@NonNull FlutterPluginBinding flutterPluginBinding) {
         context = flutterPluginBinding.getApplicationContext();
-        /// Init method channel
         channel = new MethodChannel(flutterPluginBinding.getBinaryMessenger(), CHANNEL_TAG);
         channel.setMethodCallHandler(this);
-        /// Init event channel
         eventChannel = new EventChannel(flutterPluginBinding.getBinaryMessenger(), EVENT_TAG);
         eventChannel.setStreamHandler(this);
 
@@ -73,8 +72,8 @@ public class FlutterAccessibilityServicePlugin implements FlutterPlugin, Activit
             IntentFilter intentFilter = new IntentFilter();
             intentFilter.addAction(AccessibilityListener.ACCESSIBILITY_INTENT);
 
-            AccessibilityReceiver receiver = new AccessibilityReceiver(events);
-            context.registerReceiver(receiver, intentFilter);
+            accessibilityReceiver = new AccessibilityReceiver(events);
+            context.registerReceiver(accessibilityReceiver, intentFilter);
 
             /// Set up listener intent
             Intent listenerIntent = new Intent(context, AccessibilityListener.class);
@@ -85,7 +84,8 @@ public class FlutterAccessibilityServicePlugin implements FlutterPlugin, Activit
 
     @Override
     public void onCancel(Object arguments) {
-        eventChannel.setStreamHandler(null);
+        context.unregisterReceiver(accessibilityReceiver);
+        accessibilityReceiver = null;
     }
 
     @Override
