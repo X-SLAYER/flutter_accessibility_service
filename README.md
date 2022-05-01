@@ -49,7 +49,7 @@ Create Accesiblity config file named `accessibilityservice.xml` inside `res/xml`
 
 
 ```dart
- /// check if accessibility permession is enebaled
+ /// check if accessibility permission is enebaled
  final bool status = await FlutterAccessibilityService.isAccessibilityPermissionEnabled();
  
  /// request accessibility permission
@@ -73,6 +73,7 @@ Create Accesiblity config file named `accessibilityservice.xml` inside `res/xml`
      is focused: true
      in Pip: false
      window Type: WindowType.typeApplication
+     Screen bounds: left: 0 - right: 720 - top: 0 - bottom: 1544 - width: 720 - height: 1544
 )
   */
   
@@ -118,5 +119,3 @@ The `AccessibilityEvent` provides:
   /// Gets the node bounds in screen coordinates.
   ScreenBounds? screenBounds;
 ```
-
-for each event.

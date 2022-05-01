@@ -6,4 +6,7 @@
 
 * add node bounds in screen coordinates
 * upgrade requestAccessibilityPermission to wait for the result
+## 0.2.1
+
+* fix the accessibility stream brodcast
 
