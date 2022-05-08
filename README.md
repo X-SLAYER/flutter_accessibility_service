@@ -17,7 +17,7 @@ dependencies:
 
 Inside AndroidManifest add this to bind your accessibility service with your application
 
-```
+```xml
     ...
     <service android:name="slayer.accessibility.service.flutter_accessibility_service.AccessibilityListener" android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
             <intent-filter>
@@ -32,7 +32,7 @@ Inside AndroidManifest add this to bind your accessibility service with your app
 
 Create Accesiblity config file named `accessibilityservice.xml` inside `res/xml` and add the following code inside it:
 
-```
+```xml
 <?xml version="1.0" encoding="utf-8"?>
 <accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
     android:accessibilityEventTypes = "typeWindowsChanged|typeWindowStateChanged|typeWindowContentChanged"
