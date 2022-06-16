@@ -51,6 +51,10 @@ class AccessibilityEvent {
   /// https://developer.android.com/reference/android/view/accessibility/AccessibilityNodeInfo#getBoundsInScreen(android.graphics.Rect)
   ScreenBounds? screenBounds;
 
+  /// Get the node childrens and sub childrens text
+  /// https://developer.android.com/reference/android/view/accessibility/AccessibilityNodeInfo#getChild(int)
+  List<String>? nodesText;
+
   AccessibilityEvent({
     this.actionType,
     this.eventTime,
@@ -64,6 +68,7 @@ class AccessibilityEvent {
     this.isFocused,
     this.isPip,
     this.screenBounds,
+    this.nodesText,
   });
 
   AccessibilityEvent.fromMap(Map<dynamic, dynamic> map) {
@@ -86,6 +91,11 @@ class AccessibilityEvent {
     screenBounds = map['screenBounds'] != null
         ? ScreenBounds.fromMap(map['screenBounds'])
         : null;
+    nodesText = map['nodesText'] == null
+        ? []
+        : [
+            ...{...map['nodesText']}
+          ];
   }
 
   @override
@@ -103,6 +113,7 @@ class AccessibilityEvent {
        in Pip: $isPip
        window Type: $windowType
        Screen bounds: $screenBounds
+       Nodes Text: $nodesText
        )''';
   }
 }

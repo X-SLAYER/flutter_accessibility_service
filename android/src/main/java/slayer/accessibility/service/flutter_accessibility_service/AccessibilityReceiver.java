@@ -32,6 +32,7 @@ public class AccessibilityReceiver extends BroadcastReceiver {
         data.put("isPip", intent.getBooleanExtra(AccessibilityListener.ACCESSIBILITY_IS_PIP, false));
         data.put("windowType", intent.getIntExtra(AccessibilityListener.ACCESSIBILITY_WINDOW_TYPE, -1));
         data.put("screenBounds", intent.getSerializableExtra(AccessibilityListener.ACCESSIBILITY_SCREEN_BOUNDS));
+        data.put("nodesText" , intent.getStringArrayListExtra(AccessibilityListener.ACCESSIBILITY_NODES_TEXT));
         eventSink.success(data);
     }
 }

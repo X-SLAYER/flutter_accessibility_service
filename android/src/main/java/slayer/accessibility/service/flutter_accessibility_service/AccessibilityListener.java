@@ -4,11 +4,14 @@ import android.accessibilityservice.AccessibilityService;
 import android.content.Intent;
 import android.graphics.Rect;
 import android.os.Build;
+import android.util.Log;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.accessibility.AccessibilityWindowInfo;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 
 public class AccessibilityListener extends AccessibilityService {
@@ -26,17 +29,19 @@ public class AccessibilityListener extends AccessibilityService {
     public static String ACCESSIBILITY_IS_PIP = "isInPictureInPictureMode";
     public static String ACCESSIBILITY_WINDOW_TYPE = "windowType";
     public static String ACCESSIBILITY_SCREEN_BOUNDS = "screenBounds";
+    public static String ACCESSIBILITY_NODES_TEXT = "nodesText";
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent accessibilityEvent) {
         final int eventType = accessibilityEvent.getEventType();
         AccessibilityNodeInfo parentNodeInfo = accessibilityEvent.getSource();
         AccessibilityWindowInfo windowInfo = null;
+        List<String> nextTexts = new ArrayList<>();
+
 
         if (parentNodeInfo == null) {
             return;
         }
-
 
         String packageName = parentNodeInfo.getPackageName().toString();
 
@@ -69,6 +74,11 @@ public class AccessibilityListener extends AccessibilityService {
             //Gets the text of this node.
             intent.putExtra(ACCESSIBILITY_TEXT, parentNodeInfo.getText().toString());
         }
+        getNextTexts(parentNodeInfo, nextTexts);
+
+        //Gets the text of sub nodes.
+        intent.putStringArrayListExtra(ACCESSIBILITY_NODES_TEXT, (ArrayList<String>) nextTexts);
+
         if (windowInfo != null) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 // Gets if this window is active.
@@ -85,6 +95,19 @@ public class AccessibilityListener extends AccessibilityService {
             }
         }
         sendBroadcast(intent);
+    }
+
+
+    void getNextTexts(AccessibilityNodeInfo node, List<String> arr) {
+        if (node.getText() != null && node.getText().length() > 0)
+            arr.add(node.getText().toString());
+        for (int i = 0; i < node.getChildCount(); i++) {
+            AccessibilityNodeInfo child = node.getChild(i);
+            if (child == null)
+                continue;
+            getNextTexts(child, arr);
+        }
+
     }
 
     private HashMap<String, Integer> getBoundingPoints(Rect rect) {
