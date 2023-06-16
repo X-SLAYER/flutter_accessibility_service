@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.provider.Settings;
 import android.util.Log;
+import android.view.accessibility.AccessibilityNodeInfo;
 
 import androidx.annotation.NonNull;
 
@@ -55,16 +56,35 @@ public class FlutterAccessibilityServicePlugin implements FlutterPlugin, Activit
             Intent intent = new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS);
             mActivity.startActivityForResult(intent, REQUEST_CODE_FOR_ACCESSIBILITY);
         } else if (call.method.equals("takeScreenShot")) {
-           if(Utils.isAccessibilitySettingsOn(context)){
-               final Intent i = new Intent(context, AccessibilityListener.class);
-               i.putExtra(AccessibilityListener.INTENT_TAKE_SCREENSHOT, true);
-               context.startService(i);
-               result.success(true);
-           }
+            if (Utils.isAccessibilitySettingsOn(context)) {
+                final Intent i = new Intent(context, AccessibilityListener.class);
+                i.putExtra(AccessibilityListener.INTENT_TAKE_SCREENSHOT, true);
+                context.startService(i);
+                result.success(true);
+            }
             result.success(false);
+        } else if (call.method.equals("performClick")) {
+            String nodeId = call.argument("nodeId");
+            AccessibilityNodeInfo nodeInfo = AccessibilityListener.getNodeInfo();
+            if (nodeInfo != null) {
+                AccessibilityNodeInfo nodeToClick = null;
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN_MR2) {
+                    nodeToClick = Utils.findNode(nodeInfo, nodeId);
+                }
+                if (nodeToClick != null) {
+                    nodeToClick.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                    result.success(true);
+                } else {
+                    result.success(false);
+                }
+            } else {
+                result.success(false);
+            }
+
         } else {
             result.notImplemented();
         }
+
     }
 
     @Override

@@ -20,10 +20,16 @@ import java.util.stream.Collectors;
 
 public class AccessibilityListener extends AccessibilityService {
 
+    private static AccessibilityNodeInfo nodeInfo;
+
+    public static AccessibilityNodeInfo getNodeInfo() {
+        return nodeInfo;
+    }
+
+
     public static String ACCESSIBILITY_INTENT = "accessibility_event";
     public static String ACCESSIBILITY_NAME = "packageName";
     public static String ACCESSIBILITY_NODE_ID = "nodeId";
-    public static String ACCESSIBILITY_NODES_IDS = "nodesIds";
     public static String ACCESSIBILITY_EVENT_TYPE = "eventType";
     public static String ACCESSIBILITY_TEXT = "capturedText";
     public static String ACCESSIBILITY_ACTION = "action";
@@ -37,6 +43,8 @@ public class AccessibilityListener extends AccessibilityService {
     public static String ACCESSIBILITY_SCREEN_BOUNDS = "screenBounds";
     public static String ACCESSIBILITY_NODES_TEXT = "nodesText";
     public static final String INTENT_TAKE_SCREENSHOT = "TakeScreenshot";
+    public static final String ACTION_LIST = "actionList";
+    public static final String SUB_NODES_ACTIONS = "subNodesActionList";
 
     @RequiresApi(api = Build.VERSION_CODES.N)
     @Override
@@ -45,9 +53,9 @@ public class AccessibilityListener extends AccessibilityService {
         AccessibilityNodeInfo parentNodeInfo = accessibilityEvent.getSource();
         AccessibilityWindowInfo windowInfo = null;
         List<String> nextTexts = new ArrayList<>();
-        List<String> resourceViewsIds = new ArrayList<>();
-        List<String> actions = new ArrayList<>();
-
+        List<Integer> actions = new ArrayList<>();
+        HashMap<String, List<Integer>> subNodeActions = new HashMap<>();
+        nodeInfo = parentNodeInfo;
         if (parentNodeInfo == null) {
             return;
         }
@@ -87,21 +95,13 @@ public class AccessibilityListener extends AccessibilityService {
             intent.putExtra(ACCESSIBILITY_NODE_ID, parentNodeInfo.getViewIdResourceName());
         }
         getNextTexts(parentNodeInfo, nextTexts);
-        getIdResourceNames(parentNodeInfo, resourceViewsIds);
+        getIdResourceNames(parentNodeInfo, subNodeActions);
         //Gets the text of sub nodes.
         intent.putStringArrayListExtra(ACCESSIBILITY_NODES_TEXT, (ArrayList<String>) nextTexts);
-        //Gets resource Ids names of sub nodes.
-        intent.putStringArrayListExtra(ACCESSIBILITY_NODES_IDS, (ArrayList<String>) resourceViewsIds);
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            for (int i = 0; i < parentNodeInfo.getActionList().size(); i++) {
-                if (parentNodeInfo.getActionList().get(i).getLabel() != null) {
-                    actions.add(parentNodeInfo.getActionList().get(i).getLabel().toString());
-                }
-            }
-        }
-        Log.d("TOTAL ACTIONS", "onAccessibilityEvent: " + actions);
-
+        actions.addAll(parentNodeInfo.getActionList().stream().map(AccessibilityNodeInfo.AccessibilityAction::getId).collect(Collectors.toList()));
+        //Gets actions this nodes.
+        intent.putIntegerArrayListExtra(ACTION_LIST, (ArrayList<Integer>) actions);
+        intent.putExtra(SUB_NODES_ACTIONS, subNodeActions);
         if (windowInfo != null) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 // Gets if this window is active.
@@ -143,11 +143,10 @@ public class AccessibilityListener extends AccessibilityService {
 
     @RequiresApi(api = Build.VERSION_CODES.N)
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
-    void getIdResourceNames(AccessibilityNodeInfo node, List<String> arr) {
+    void getIdResourceNames(AccessibilityNodeInfo node, HashMap<String, List<Integer>> arr) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
             if (node.getViewIdResourceName() != null && node.getViewIdResourceName().length() > 0) {
-                Log.d("RES-VIEW-ID-FFF", "" + node.getActionList().stream().map(AccessibilityNodeInfo.AccessibilityAction::getId).collect(Collectors.toList()));
-                arr.add(node.getViewIdResourceName());
+                arr.put(node.getViewIdResourceName(), node.getActionList().stream().map(AccessibilityNodeInfo.AccessibilityAction::getId).collect(Collectors.toList()));
             }
             for (int i = 0; i < node.getChildCount(); i++) {
                 AccessibilityNodeInfo child = node.getChild(i);
@@ -171,6 +170,5 @@ public class AccessibilityListener extends AccessibilityService {
 
     @Override
     public void onInterrupt() {
-
     }
 }

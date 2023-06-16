@@ -34,7 +34,8 @@ public class AccessibilityReceiver extends BroadcastReceiver {
         data.put("windowType", intent.getIntExtra(AccessibilityListener.ACCESSIBILITY_WINDOW_TYPE, -1));
         data.put("screenBounds", intent.getSerializableExtra(AccessibilityListener.ACCESSIBILITY_SCREEN_BOUNDS));
         data.put("nodesText" , intent.getStringArrayListExtra(AccessibilityListener.ACCESSIBILITY_NODES_TEXT));
-        data.put("nodesIds" , intent.getStringArrayListExtra(AccessibilityListener.ACCESSIBILITY_NODES_IDS));
+        data.put("parentActions" , intent.getIntegerArrayListExtra(AccessibilityListener.ACTION_LIST));
+        data.put("subNodesActions", intent.getSerializableExtra(AccessibilityListener.SUB_NODES_ACTIONS));
         eventSink.success(data);
     }
 }

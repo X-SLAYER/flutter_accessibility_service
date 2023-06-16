@@ -59,9 +59,13 @@ class AccessibilityEvent {
   /// https://developer.android.com/reference/android/view/accessibility/AccessibilityNodeInfo#getChild(int)
   List<String>? nodesText;
 
-  /// Get the node childrens and sub childrens view's id
+  /// Get the node childrens available actions
   /// https://developer.android.com/reference/android/view/accessibility/AccessibilityNodeInfo#getViewIdResourceName()
-  List<String>? nodesIds;
+  List<NodeAction>? actions;
+
+  /// Get sub childrens view's id and available actions
+  /// https://developer.android.com/reference/android/view/accessibility/AccessibilityNodeInfo#getViewIdResourceName()
+  List<SubNodes>? subNodes;
 
   AccessibilityEvent({
     this.nodeId,
@@ -78,7 +82,7 @@ class AccessibilityEvent {
     this.isPip,
     this.screenBounds,
     this.nodesText,
-    this.nodesIds,
+    this.actions,
   });
 
   AccessibilityEvent.fromMap(Map<dynamic, dynamic> map) {
@@ -109,16 +113,35 @@ class AccessibilityEvent {
     screenBounds = map['screenBounds'] != null
         ? ScreenBounds.fromMap(map['screenBounds'])
         : null;
+    subNodes = map['subNodesActions'] != null
+        ? (map['subNodesActions'] as Map<dynamic, dynamic>)
+            .keys
+            .map(
+              (key) => SubNodes(
+                nodeId: key,
+                actions: ((map['subNodesActions'][key]) as List<dynamic>)
+                    .map((e) =>
+                        (NodeAction.values
+                            .firstWhereOrNull((element) => element.id == e)) ??
+                        NodeAction.unknown)
+                    .toList(),
+              ),
+            )
+            .toList()
+        : null;
     nodesText = map['nodesText'] == null
         ? []
         : [
             ...{...map['nodesText']}
           ];
-    nodesIds = map['nodesIds'] == null
+    actions = map['parentActions'] == null
         ? []
-        : [
-            ...{...map['nodesIds']}
-          ];
+        : (map['parentActions'] as List<dynamic>)
+            .map((e) =>
+                (NodeAction.values
+                    .firstWhereOrNull((element) => element.id == e)) ??
+                NodeAction.unknown)
+            .toList();
   }
 
   @override
@@ -138,7 +161,8 @@ class AccessibilityEvent {
        window Type: $windowType
        Screen bounds: $screenBounds
        Nodes Text: $nodesText
-       Nodes View ids: $nodesIds
+       actions: $actions
+       subNodes: $subNodes
        )''';
   }
 }
@@ -172,5 +196,17 @@ class ScreenBounds {
   @override
   String toString() {
     return "left: $left - right: $right - top: $top - bottom: $bottom - width: $width - height: $height";
+  }
+}
+
+class SubNodes {
+  String? nodeId;
+  List<NodeAction>? actions;
+
+  SubNodes({this.nodeId, this.actions});
+
+  @override
+  String toString() {
+    return "nodeId: $nodeId - Actions: $actions";
   }
 }

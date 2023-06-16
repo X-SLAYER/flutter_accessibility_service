@@ -3,6 +3,7 @@ import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_accessibility_service/accessibility_event.dart';
+import 'package:flutter_accessibility_service/constants.dart';
 
 import 'package:flutter_accessibility_service/flutter_accessibility_service.dart';
 
@@ -70,14 +71,15 @@ class _MyAppState extends State<MyApp> {
                           setState(() {
                             events.add(event);
                           });
-                          if ((event.capturedText
-                                      ?.toLowerCase()
-                                      .contains('slayer') ??
-                                  false) ||
-                              ((event.nodesText ?? [])
-                                  .map((e) => e.toLowerCase())
-                                  .contains('slayer'))) {
-                            await FlutterAccessibilityService.takeScreenShot();
+                          for (var element in event.subNodes!) {
+                            if (element.actions!
+                                .contains(NodeAction.actionClick)) {
+                              final status = await FlutterAccessibilityService
+                                  .performClick(
+                                element.nodeId!,
+                              );
+                              log('is Click Performed ? : $status : ${element.nodeId!}');
+                            }
                           }
                         });
                       },
