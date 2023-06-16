@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_accessibility_service/accessibility_event.dart';
+import 'package:flutter_accessibility_service/constants.dart';
 
 class FlutterAccessibilityService {
   FlutterAccessibilityService._();
@@ -60,11 +61,17 @@ class FlutterAccessibilityService {
     }
   }
 
-  /// Perform action click
-  static Future<bool> performClick(String nodeId) async {
+  /// Perform action
+  static Future<bool> performAction(String nodeId, NodeAction action) async {
     try {
-      return await _methodChannel
-              .invokeMethod<bool?>('performClick', {"nodeId": nodeId}) ??
+      if (action == NodeAction.unknown) return false;
+      return await _methodChannel.invokeMethod<bool?>(
+            'performAction',
+            {
+              "nodeId": nodeId,
+              "nodeAction": action.id,
+            },
+          ) ??
           false;
     } on PlatformException catch (error) {
       log("$error");

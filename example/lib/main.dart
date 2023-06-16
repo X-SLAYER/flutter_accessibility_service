@@ -4,7 +4,7 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter_accessibility_service/accessibility_event.dart';
 import 'package:flutter_accessibility_service/constants.dart';
-
+import 'package:collection/collection.dart';
 import 'package:flutter_accessibility_service/flutter_accessibility_service.dart';
 
 void main() {
@@ -25,6 +25,40 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
+  }
+
+  void handleAccessiblityStream() {
+    if (_subscription?.isPaused ?? false) {
+      _subscription?.resume();
+      return;
+    }
+    _subscription =
+        FlutterAccessibilityService.accessStream.listen((event) async {
+      log("$event");
+      setState(() {
+        events.add(event);
+      });
+      if (event.subNodes!.map((e) => e.text).contains('Start chat')) {
+        final frame = event.subNodes!
+            .firstWhereOrNull((element) => element.text == 'Start chat');
+        if (frame != null) {
+          final status = await FlutterAccessibilityService.performAction(
+            frame.nodeId!,
+            NodeAction.actionClick,
+          );
+          log('is Click Performed ? : $status : ${frame.nodeId!}');
+        }
+        // for (var element in event.subNodes!) {
+        //   if (element.actions!.contains(NodeAction.focusInput)) {
+        //     final status = await FlutterAccessibilityService.performAction(
+        //       element.nodeId!,
+        //       NodeAction.focusInput,
+        //     );
+        //     log('is Click Performed ? : $status : ${element.nodeId!}');
+        //   }
+        // }
+      }
+    });
   }
 
   @override
@@ -60,29 +94,7 @@ class _MyAppState extends State<MyApp> {
                     ),
                     const SizedBox(height: 20.0),
                     TextButton(
-                      onPressed: () {
-                        if (_subscription?.isPaused ?? false) {
-                          _subscription?.resume();
-                          return;
-                        }
-                        _subscription = FlutterAccessibilityService.accessStream
-                            .listen((event) async {
-                          log("$event");
-                          setState(() {
-                            events.add(event);
-                          });
-                          for (var element in event.subNodes!) {
-                            if (element.actions!
-                                .contains(NodeAction.actionClick)) {
-                              final status = await FlutterAccessibilityService
-                                  .performClick(
-                                element.nodeId!,
-                              );
-                              log('is Click Performed ? : $status : ${element.nodeId!}');
-                            }
-                          }
-                        });
-                      },
+                      onPressed: handleAccessiblityStream,
                       child: const Text("Start Stream"),
                     ),
                     const SizedBox(height: 20.0),
@@ -107,7 +119,13 @@ class _MyAppState extends State<MyApp> {
                   itemCount: events.length,
                   itemBuilder: (_, index) => ListTile(
                     title: Text(events[index]!.packageName!),
-                    subtitle: Text(events[index]!.contentChangeTypes!.name),
+                    subtitle: Text(events[index]!
+                            .subNodes!
+                            .map((e) => e.actions)
+                            .expand((element) => element!)
+                            .contains(NodeAction.actionClick)
+                        ? 'Have Action to click'
+                        : ''),
                   ),
                 ),
               )

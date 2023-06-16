@@ -54,7 +54,7 @@ public class AccessibilityListener extends AccessibilityService {
         AccessibilityWindowInfo windowInfo = null;
         List<String> nextTexts = new ArrayList<>();
         List<Integer> actions = new ArrayList<>();
-        HashMap<String, List<Integer>> subNodeActions = new HashMap<>();
+        HashMap<String, HashMap<String, Object>> subNodeActions = new HashMap<>();
         nodeInfo = parentNodeInfo;
         if (parentNodeInfo == null) {
             return;
@@ -143,10 +143,13 @@ public class AccessibilityListener extends AccessibilityService {
 
     @RequiresApi(api = Build.VERSION_CODES.N)
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
-    void getIdResourceNames(AccessibilityNodeInfo node, HashMap<String, List<Integer>> arr) {
+    void getIdResourceNames(AccessibilityNodeInfo node, HashMap<String, HashMap<String, Object>> arr) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
             if (node.getViewIdResourceName() != null && node.getViewIdResourceName().length() > 0) {
-                arr.put(node.getViewIdResourceName(), node.getActionList().stream().map(AccessibilityNodeInfo.AccessibilityAction::getId).collect(Collectors.toList()));
+                HashMap<String, Object> nested = new HashMap<>();
+                nested.put("text", node.getText());
+                nested.put("actions", node.getActionList().stream().map(AccessibilityNodeInfo.AccessibilityAction::getId).collect(Collectors.toList()));
+                arr.put(node.getViewIdResourceName(), nested);
             }
             for (int i = 0; i < node.getChildCount(); i++) {
                 AccessibilityNodeInfo child = node.getChild(i);

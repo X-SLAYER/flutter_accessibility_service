@@ -118,8 +118,10 @@ class AccessibilityEvent {
             .keys
             .map(
               (key) => SubNodes(
+                text: map['subNodesActions'][key]['text'],
                 nodeId: key,
-                actions: ((map['subNodesActions'][key]) as List<dynamic>)
+                actions: ((map['subNodesActions'][key]['actions'])
+                        as List<dynamic>)
                     .map((e) =>
                         (NodeAction.values
                             .firstWhereOrNull((element) => element.id == e)) ??
@@ -201,12 +203,17 @@ class ScreenBounds {
 
 class SubNodes {
   String? nodeId;
+  String? text;
   List<NodeAction>? actions;
 
-  SubNodes({this.nodeId, this.actions});
+  SubNodes({
+    this.nodeId,
+    this.actions,
+    this.text,
+  });
 
   @override
   String toString() {
-    return "nodeId: $nodeId - Actions: $actions";
+    return "nodeId: $nodeId - Text: $text - Actions: $actions";
   }
 }

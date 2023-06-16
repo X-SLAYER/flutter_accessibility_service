@@ -63,8 +63,9 @@ public class FlutterAccessibilityServicePlugin implements FlutterPlugin, Activit
                 result.success(true);
             }
             result.success(false);
-        } else if (call.method.equals("performClick")) {
+        } else if (call.method.equals("performAction")) {
             String nodeId = call.argument("nodeId");
+            Integer action = (Integer) call.argument("nodeAction");
             AccessibilityNodeInfo nodeInfo = AccessibilityListener.getNodeInfo();
             if (nodeInfo != null) {
                 AccessibilityNodeInfo nodeToClick = null;
@@ -72,7 +73,7 @@ public class FlutterAccessibilityServicePlugin implements FlutterPlugin, Activit
                     nodeToClick = Utils.findNode(nodeInfo, nodeId);
                 }
                 if (nodeToClick != null) {
-                    nodeToClick.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                    nodeToClick.performAction(action);
                     result.success(true);
                 } else {
                     result.success(false);
