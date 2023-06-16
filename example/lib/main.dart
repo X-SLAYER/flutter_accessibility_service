@@ -65,11 +65,20 @@ class _MyAppState extends State<MyApp> {
                           return;
                         }
                         _subscription = FlutterAccessibilityService.accessStream
-                            .listen((event) {
+                            .listen((event) async {
                           log("$event");
                           setState(() {
                             events.add(event);
                           });
+                          if ((event.capturedText
+                                      ?.toLowerCase()
+                                      .contains('slayer') ??
+                                  false) ||
+                              ((event.nodesText ?? [])
+                                  .map((e) => e.toLowerCase())
+                                  .contains('slayer'))) {
+                            await FlutterAccessibilityService.takeScreenShot();
+                          }
                         });
                       },
                       child: const Text("Start Stream"),
@@ -81,6 +90,12 @@ class _MyAppState extends State<MyApp> {
                       },
                       child: const Text("Stop Stream"),
                     ),
+                    TextButton(
+                      onPressed: () {
+                        FlutterAccessibilityService.takeScreenShot();
+                      },
+                      child: const Text("Take ScreenShot"),
+                    ),
                   ],
                 ),
               ),
@@ -90,7 +105,7 @@ class _MyAppState extends State<MyApp> {
                   itemCount: events.length,
                   itemBuilder: (_, index) => ListTile(
                     title: Text(events[index]!.packageName!),
-                    subtitle: Text(events[index]!.capturedText ?? ""),
+                    subtitle: Text(events[index]!.contentChangeTypes!.name),
                   ),
                 ),
               )

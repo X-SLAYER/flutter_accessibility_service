@@ -48,4 +48,15 @@ class FlutterAccessibilityService {
       return false;
     }
   }
+
+  /// Take a system screenshot and save it to the device's external storage.
+  static Future<bool> takeScreenShot() async {
+    try {
+      return await _methodeChannel.invokeMethod<bool?>('takeScreenShot') ??
+          false;
+    } on PlatformException catch (error) {
+      log("$error");
+      return false;
+    }
+  }
 }

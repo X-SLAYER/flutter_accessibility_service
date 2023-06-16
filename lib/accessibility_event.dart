@@ -1,8 +1,12 @@
-import 'package:flutter_accessibility_service/utils.dart';
+import 'package:collection/collection.dart';
 
 import 'constants.dart';
 
 class AccessibilityEvent {
+  /// Gets the fully qualified resource name of the source view's id.
+  /// https://developer.android.com/reference/android/view/accessibility/AccessibilityNodeInfo#getViewIdResourceName()
+  String? nodeId;
+
   /// the performed action that triggered this event
   /// https://developer.android.com/reference/android/view/accessibility/AccessibilityEvent#getAction()
   int? actionType;
@@ -55,7 +59,12 @@ class AccessibilityEvent {
   /// https://developer.android.com/reference/android/view/accessibility/AccessibilityNodeInfo#getChild(int)
   List<String>? nodesText;
 
+  /// Get the node childrens and sub childrens view's id
+  /// https://developer.android.com/reference/android/view/accessibility/AccessibilityNodeInfo#getViewIdResourceName()
+  List<String>? nodesIds;
+
   AccessibilityEvent({
+    this.nodeId,
     this.actionType,
     this.eventTime,
     this.packageName,
@@ -69,22 +78,31 @@ class AccessibilityEvent {
     this.isPip,
     this.screenBounds,
     this.nodesText,
+    this.nodesIds,
   });
 
   AccessibilityEvent.fromMap(Map<dynamic, dynamic> map) {
+    nodeId = map['nodeId'];
     actionType = map['actionType'];
     eventTime = DateTime.now();
     packageName = map['packageName'];
-    eventType =
-        map['eventType'] == null ? null : Utils.eventType[map['eventType']];
+    if (map['eventType'] == null) {
+      eventType = null;
+    } else {
+      eventType = EventType.values
+          .firstWhereOrNull((element) => element.id == map['eventType']);
+    }
     capturedText = map['capturedText'];
     contentChangeTypes = map['contentChangeTypes'] == null
         ? null
-        : (Utils.changeType[map['contentChangeTypes']] ??
+        : (ContentChangeTypes.values.firstWhereOrNull(
+                (element) => element.id == map['contentChangeTypes']) ??
             ContentChangeTypes.others);
     movementGranularity = map['movementGranularity'];
-    windowType =
-        map['windowType'] == null ? null : Utils.windowType[map['windowType']];
+    windowType = map['windowType'] == null
+        ? null
+        : WindowType.values
+            .firstWhereOrNull((element) => element.id == map['windowType']);
     isActive = map['isActive'];
     isFocused = map['isFocused'];
     isPip = map['isPip'];
@@ -96,11 +114,17 @@ class AccessibilityEvent {
         : [
             ...{...map['nodesText']}
           ];
+    nodesIds = map['nodesIds'] == null
+        ? []
+        : [
+            ...{...map['nodesIds']}
+          ];
   }
 
   @override
   String toString() {
     return '''AccessibilityEvent: (
+       nodeId: $nodeId 
        Action Type: $actionType 
        Event Time: $eventTime 
        Package Name: $packageName 
@@ -114,6 +138,7 @@ class AccessibilityEvent {
        window Type: $windowType
        Screen bounds: $screenBounds
        Nodes Text: $nodesText
+       Nodes View ids: $nodesIds
        )''';
   }
 }

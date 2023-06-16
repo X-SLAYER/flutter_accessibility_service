@@ -20,6 +20,7 @@ public class AccessibilityReceiver extends BroadcastReceiver {
     public void onReceive(Context context, Intent intent) {
         /// Send data back via the Event Sink
         HashMap<String, Object> data = new HashMap<>();
+        data.put("nodeId", intent.getStringExtra(AccessibilityListener.ACCESSIBILITY_NODE_ID));
         data.put("packageName", intent.getStringExtra(AccessibilityListener.ACCESSIBILITY_NAME));
         data.put("eventType", intent.getIntExtra(AccessibilityListener.ACCESSIBILITY_EVENT_TYPE, -1));
         data.put("capturedText", intent.getStringExtra(AccessibilityListener.ACCESSIBILITY_TEXT));
@@ -33,6 +34,7 @@ public class AccessibilityReceiver extends BroadcastReceiver {
         data.put("windowType", intent.getIntExtra(AccessibilityListener.ACCESSIBILITY_WINDOW_TYPE, -1));
         data.put("screenBounds", intent.getSerializableExtra(AccessibilityListener.ACCESSIBILITY_SCREEN_BOUNDS));
         data.put("nodesText" , intent.getStringArrayListExtra(AccessibilityListener.ACCESSIBILITY_NODES_TEXT));
+        data.put("nodesIds" , intent.getStringArrayListExtra(AccessibilityListener.ACCESSIBILITY_NODES_IDS));
         eventSink.success(data);
     }
 }

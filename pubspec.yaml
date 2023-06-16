@@ -4,7 +4,7 @@ version: 0.2.2
 homepage: https://github.com/X-SLAYER/flutter_accessibility_service
 
 environment:
-  sdk: ">=2.16.2 <3.0.0"
+  sdk: ">=2.17.0 <3.0.0"
   flutter: ">=2.5.0"
 
 dependencies:

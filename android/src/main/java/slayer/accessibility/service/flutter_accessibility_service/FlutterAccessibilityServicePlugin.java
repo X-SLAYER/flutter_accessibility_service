@@ -54,6 +54,14 @@ public class FlutterAccessibilityServicePlugin implements FlutterPlugin, Activit
         } else if (call.method.equals("requestAccessibilityPermission")) {
             Intent intent = new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS);
             mActivity.startActivityForResult(intent, REQUEST_CODE_FOR_ACCESSIBILITY);
+        } else if (call.method.equals("takeScreenShot")) {
+           if(Utils.isAccessibilitySettingsOn(context)){
+               final Intent i = new Intent(context, AccessibilityListener.class);
+               i.putExtra(AccessibilityListener.INTENT_TAKE_SCREENSHOT, true);
+               context.startService(i);
+               result.success(true);
+           }
+            result.success(false);
         } else {
             result.notImplemented();
         }
