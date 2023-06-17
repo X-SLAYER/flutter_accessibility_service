@@ -4,11 +4,14 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.os.Build;
+import android.os.Bundle;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.accessibility.AccessibilityNodeInfo;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 
 import io.flutter.embedding.engine.plugins.FlutterPlugin;
 import io.flutter.embedding.engine.plugins.activity.ActivityAware;
@@ -47,6 +50,7 @@ public class FlutterAccessibilityServicePlugin implements FlutterPlugin, Activit
 
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     @Override
     public void onMethodCall(@NonNull MethodCall call, @NonNull Result result) {
         pendingResult = result;
@@ -66,6 +70,8 @@ public class FlutterAccessibilityServicePlugin implements FlutterPlugin, Activit
         } else if (call.method.equals("performAction")) {
             String nodeId = call.argument("nodeId");
             Integer action = (Integer) call.argument("nodeAction");
+            Object extras = call.argument("extras");
+            Bundle arguments = Utils.bundleIdentifier(action, extras);
             AccessibilityNodeInfo nodeInfo = AccessibilityListener.getNodeInfo();
             if (nodeInfo != null) {
                 AccessibilityNodeInfo nodeToClick = null;
@@ -73,7 +79,11 @@ public class FlutterAccessibilityServicePlugin implements FlutterPlugin, Activit
                     nodeToClick = Utils.findNode(nodeInfo, nodeId);
                 }
                 if (nodeToClick != null) {
-                    nodeToClick.performAction(action);
+                    if (arguments == null) {
+                        nodeToClick.performAction(action);
+                    } else {
+                        nodeToClick.performAction(action, arguments);
+                    }
                     result.success(true);
                 } else {
                     result.success(false);

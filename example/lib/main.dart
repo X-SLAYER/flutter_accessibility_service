@@ -4,7 +4,6 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter_accessibility_service/accessibility_event.dart';
 import 'package:flutter_accessibility_service/constants.dart';
-import 'package:collection/collection.dart';
 import 'package:flutter_accessibility_service/flutter_accessibility_service.dart';
 
 void main() {
@@ -38,25 +37,15 @@ class _MyAppState extends State<MyApp> {
       setState(() {
         events.add(event);
       });
-      if (event.subNodes!.map((e) => e.text).contains('Start chat')) {
-        final frame = event.subNodes!
-            .firstWhereOrNull((element) => element.text == 'Start chat');
-        if (frame != null) {
+      if (!event.packageName!.contains('youtube')) return;
+      for (var node in event.subNodes!) {
+        if (node.actions!.contains(NodeAction.actionScrollForward)) {
           final status = await FlutterAccessibilityService.performAction(
-            frame.nodeId!,
-            NodeAction.actionClick,
+            node.nodeId!,
+            NodeAction.actionScrollForward,
           );
-          log('is Click Performed ? : $status : ${frame.nodeId!}');
+          log('is action Performed ? : $status : ${node.nodeId!}');
         }
-        // for (var element in event.subNodes!) {
-        //   if (element.actions!.contains(NodeAction.focusInput)) {
-        //     final status = await FlutterAccessibilityService.performAction(
-        //       element.nodeId!,
-        //       NodeAction.focusInput,
-        //     );
-        //     log('is Click Performed ? : $status : ${element.nodeId!}');
-        //   }
-        // }
       }
     });
   }

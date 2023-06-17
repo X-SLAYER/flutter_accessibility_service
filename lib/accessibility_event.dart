@@ -7,9 +7,9 @@ class AccessibilityEvent {
   /// https://developer.android.com/reference/android/view/accessibility/AccessibilityNodeInfo#getViewIdResourceName()
   String? nodeId;
 
-  /// the performed action that triggered this event
+  /// The performed action that triggered this event
   /// https://developer.android.com/reference/android/view/accessibility/AccessibilityEvent#getAction()
-  int? actionType;
+  NodeAction? actionType;
 
   /// the time in which this event was sent.
   /// https://developer.android.com/reference/android/view/accessibility/AccessibilityEvent#TYPE_WINDOW_CONTENT_CHANGED
@@ -87,7 +87,9 @@ class AccessibilityEvent {
 
   AccessibilityEvent.fromMap(Map<dynamic, dynamic> map) {
     nodeId = map['nodeId'];
-    actionType = map['actionType'];
+    actionType = NodeAction.values
+            .firstWhereOrNull((element) => element.id == map['actionType']) ??
+        NodeAction.unknown;
     eventTime = DateTime.now();
     packageName = map['packageName'];
     if (map['eventType'] == null) {
@@ -214,6 +216,11 @@ class SubNodes {
 
   @override
   String toString() {
-    return "nodeId: $nodeId - Text: $text - Actions: $actions";
+    return ''' SubNodes(
+    nodeId: $nodeId 
+    Text: $text 
+    Actions: $actions
+    )
+    ''';
   }
 }

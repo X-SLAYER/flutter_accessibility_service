@@ -61,8 +61,14 @@ class FlutterAccessibilityService {
     }
   }
 
-  /// Perform action
-  static Future<bool> performAction(String nodeId, NodeAction action) async {
+  /// An action that can be performed on an `AccessibilityNodeInfo`
+  /// pass the necessary arguments depends on each action to avoid any errors
+  /// See more: https://developer.android.com/reference/android/view/accessibility/AccessibilityNodeInfo.AccessibilityAction
+  static Future<bool> performAction(
+    String nodeId,
+    NodeAction action, [
+    dynamic arguments,
+  ]) async {
     try {
       if (action == NodeAction.unknown) return false;
       return await _methodChannel.invokeMethod<bool?>(
@@ -70,6 +76,7 @@ class FlutterAccessibilityService {
             {
               "nodeId": nodeId,
               "nodeAction": action.id,
+              "extras": arguments,
             },
           ) ??
           false;

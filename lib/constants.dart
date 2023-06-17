@@ -99,9 +99,31 @@ enum NodeAction {
 
   /// Action that requests to go to the next entity in this node's text at a given movement granularity.
   /// For example, move to the next character, word, etc.
+  /// pass an argument when you perform an action
+  ///
+  /// example:
+  ///
+  /// ```dart
+  ///   final status = await FlutterAccessibilityService.performAction(
+  ///     frame.nodeId!,
+  ///     NodeAction.actionNextAtMovementGranularity,
+  ///     false,
+  ///  );
+  /// ```
   actionNextAtMovementGranularity(256),
 
   /// Action to move to the next HTML element of a given type. For example, move to the BUTTON, INPUT, TABLE, etc.
+  /// pass an argument when you perform an action
+  ///
+  /// example:
+  ///
+  /// ```dart
+  ///   final status = await FlutterAccessibilityService.performAction(
+  ///     frame.nodeId!,
+  ///     NodeAction.actionNextHtmlElement,
+  ///     "BUTTON",
+  ///  );
+  /// ```
   actionNextHtmlElement(1024),
 
   /// Action to paste the current clipboard content.
@@ -109,9 +131,31 @@ enum NodeAction {
 
   /// Action that requests to go to the previous entity in this node's text at a given movement granularity.
   /// For example, move to the next character, word, etc.
+  /// pass an argument when you perform an action
+  ///
+  /// example:
+  ///
+  /// ```dart
+  ///   final status = await FlutterAccessibilityService.performAction(
+  ///     frame.nodeId!,
+  ///     NodeAction.actionPreviousAtMovementGranularity,
+  ///     false,
+  ///  );
+  /// ```
   actionPreviousAtMovementGranularity(512),
 
   /// Action to move to the previous HTML element of a given type. For example, move to the BUTTON, INPUT, TABLE, etc.
+  /// pass an argument when you perform an action
+  ///
+  /// example:
+  ///
+  /// ```dart
+  ///   final status = await FlutterAccessibilityService.performAction(
+  ///     frame.nodeId!,
+  ///     NodeAction.actionPreviousHtmlElement,
+  ///     "BUTTON",
+  ///  );
+  /// ```
   actionPreviousHtmlElement(2048),
 
   /// Action to scroll the node content backward.
@@ -124,10 +168,32 @@ enum NodeAction {
   actionSelect(4),
 
   /// Action to set the selection. Performing this action with no arguments clears the selection.
+  /// pass an argument when you perform an action
+  ///
+  /// example:
+  ///
+  /// ```dart
+  ///   final status = await FlutterAccessibilityService.performAction(
+  ///     frame.nodeId!,
+  ///     NodeAction.actionSetSelection,
+  ///     {"start": 1, "end": 2},
+  ///  );
+  /// ```
   actionSetSelection(131072),
 
   /// Action that sets the text of the node. Performing the action without argument, using null or empty CharSequence will clear the text.
   /// This action will also put the cursor at the end of text.
+  /// pass an argument when you perform an action
+  ///
+  /// example:
+  ///
+  /// ```dart
+  ///   final status = await FlutterAccessibilityService.performAction(
+  ///     frame.nodeId!,
+  ///     NodeAction.actionSetText,
+  ///     "Flutter",
+  ///  );
+  /// ```
   actionSetText(2097152),
 
   /// The accessibility focus.
