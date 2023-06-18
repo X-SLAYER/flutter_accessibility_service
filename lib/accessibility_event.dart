@@ -40,7 +40,7 @@ class AccessibilityEvent {
   WindowType? windowType;
 
   /// check if this window is active. An active window is the one the user is currently touching or the window has input focus and the user is not touching any window.
-  /// https://developer.android.com/reference/android/view/accessibility/AccessibilityWindowInfo#getType()
+  /// https://developer.android.com/reference/android/view/accessibility/AccessibilityWindowInfo#isActive()
   bool? isActive;
 
   /// check if this window has input focus.

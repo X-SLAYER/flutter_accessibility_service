@@ -6,6 +6,19 @@ import 'package:flutter_accessibility_service/accessibility_event.dart';
 import 'package:flutter_accessibility_service/constants.dart';
 import 'package:flutter_accessibility_service/flutter_accessibility_service.dart';
 
+import 'package:collection/collection.dart';
+import 'package:flutter_accessibility_service_example/overlay.dart';
+
+@pragma("vm:entry-point")
+void accessibilityOverlay() {
+  runApp(
+    const MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: BlockingOverlay(),
+    ),
+  );
+}
+
 void main() {
   runApp(const MyApp());
 }
@@ -20,6 +33,10 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   StreamSubscription<AccessibilityEvent>? _subscription;
   List<AccessibilityEvent?> events = [];
+  DateTime eventDateTime = DateTime.now();
+
+  bool foundSearchField = false;
+  bool hasBeenClicked = false;
 
   @override
   void initState() {
@@ -27,27 +44,57 @@ class _MyAppState extends State<MyApp> {
   }
 
   void handleAccessiblityStream() {
+    foundSearchField = false;
+    hasBeenClicked = false;
     if (_subscription?.isPaused ?? false) {
       _subscription?.resume();
       return;
     }
     _subscription =
         FlutterAccessibilityService.accessStream.listen((event) async {
-      log("$event");
       setState(() {
         events.add(event);
       });
-      if (!event.packageName!.contains('youtube')) return;
-      for (var node in event.subNodes!) {
-        if (node.actions!.contains(NodeAction.actionScrollForward)) {
-          final status = await FlutterAccessibilityService.performAction(
-            node.nodeId!,
-            NodeAction.actionScrollForward,
-          );
-          log('is action Performed ? : $status : ${node.nodeId!}');
-        }
+      log('$event');
+      // automateYouTube(event);
+      if (event.packageName!.contains('youtube') && event.isFocused!) {
+        eventDateTime = event.eventTime!;
+        await FlutterAccessibilityService.showOverlayWindow();
+      } else if (!event.packageName!.contains('youtube') &&
+          eventDateTime.difference(event.eventTime!).inSeconds.abs() > 2) {
+        await FlutterAccessibilityService.hideOverlayWindow();
       }
     });
+  }
+
+  void automateYouTube(AccessibilityEvent event) async {
+    if (!event.packageName!.contains('youtube')) return;
+    log("$event");
+    if (!foundSearchField) {
+      final searchField = event.subNodes!.firstWhereOrNull(
+        (element) => element.text == 'Search YouTube',
+      );
+      log('$searchField', name: 'Search Button only');
+      if (searchField != null) {
+        foundSearchField = await FlutterAccessibilityService.performAction(
+          searchField.nodeId!,
+          NodeAction.actionSetText,
+          'Eminem until i collapse',
+        );
+        if (!hasBeenClicked) {
+          final clickableOne = event.subNodes!.lastWhereOrNull(
+            (element) => element.nodeId!.contains('/text'),
+          );
+          log("$clickableOne", name: 'CLICKABLE ONE');
+          if (clickableOne != null) {
+            hasBeenClicked = await FlutterAccessibilityService.performAction(
+              clickableOne.nodeId!,
+              NodeAction.actionClearFocus,
+            );
+          }
+        }
+      }
+    }
   }
 
   @override
@@ -108,13 +155,15 @@ class _MyAppState extends State<MyApp> {
                   itemCount: events.length,
                   itemBuilder: (_, index) => ListTile(
                     title: Text(events[index]!.packageName!),
-                    subtitle: Text(events[index]!
-                            .subNodes!
-                            .map((e) => e.actions)
-                            .expand((element) => element!)
-                            .contains(NodeAction.actionClick)
-                        ? 'Have Action to click'
-                        : ''),
+                    subtitle: Text(
+                      events[index]!
+                              .subNodes!
+                              .map((e) => e.actions)
+                              .expand((element) => element!)
+                              .contains(NodeAction.actionClick)
+                          ? 'Have Action to click'
+                          : '',
+                    ),
                   ),
                 ),
               )

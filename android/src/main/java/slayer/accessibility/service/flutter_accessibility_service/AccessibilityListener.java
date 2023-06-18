@@ -1,14 +1,24 @@
 package slayer.accessibility.service.flutter_accessibility_service;
 
+import static slayer.accessibility.service.flutter_accessibility_service.FlutterAccessibilityServicePlugin.CACHED_TAG;
+
 import android.accessibilityservice.AccessibilityService;
 import android.annotation.TargetApi;
 import android.content.Intent;
+import android.graphics.Color;
+import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.os.Build;
 import android.util.Log;
+import android.view.Gravity;
+import android.view.View;
+import android.view.WindowManager;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.accessibility.AccessibilityWindowInfo;
+import android.widget.FrameLayout;
+import android.widget.RelativeLayout;
+import android.widget.TextView;
 
 import androidx.annotation.RequiresApi;
 
@@ -17,8 +27,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import io.flutter.embedding.android.FlutterTextureView;
+import io.flutter.embedding.android.FlutterView;
+import io.flutter.embedding.engine.FlutterEngineCache;
+
 
 public class AccessibilityListener extends AccessibilityService {
+    private static WindowManager mWindowManager;
+    private static FlutterView mOverlayView;
+    static private boolean isOverlayShown = false; // NEW flag
+
 
     private static AccessibilityNodeInfo nodeInfo;
 
@@ -145,7 +163,7 @@ public class AccessibilityListener extends AccessibilityService {
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     void getIdResourceNames(AccessibilityNodeInfo node, HashMap<String, HashMap<String, Object>> arr) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
-            if (node.getViewIdResourceName() != null && node.getViewIdResourceName().length() > 0) {
+            if (node.getViewIdResourceName() != null) {
                 HashMap<String, Object> nested = new HashMap<>();
                 nested.put("text", node.getText());
                 nested.put("actions", node.getActionList().stream().map(AccessibilityNodeInfo.AccessibilityAction::getId).collect(Collectors.toList()));
@@ -169,6 +187,47 @@ public class AccessibilityListener extends AccessibilityService {
         frame.put("width", rect.width());
         frame.put("height", rect.height());
         return frame;
+    }
+
+
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP_MR1)
+    @Override
+    protected void onServiceConnected() {
+        mWindowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
+        mOverlayView = new FlutterView(getApplicationContext(), new FlutterTextureView(getApplicationContext()));
+        mOverlayView.attachToFlutterEngine(FlutterEngineCache.getInstance().get(CACHED_TAG));
+        mOverlayView.setFitsSystemWindows(true);
+        mOverlayView.setFocusable(true);
+        mOverlayView.setFocusableInTouchMode(true);
+        mOverlayView.setBackgroundColor(Color.TRANSPARENT);
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP_MR1)
+    static public void showOverlay() {
+        if (!isOverlayShown) {
+            WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
+            lp.type = WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY;
+            lp.format = PixelFormat.TRANSLUCENT;
+            lp.flags |= WindowManager.LayoutParams.FLAG_FULLSCREEN;
+            lp.width = WindowManager.LayoutParams.MATCH_PARENT;
+            lp.height = WindowManager.LayoutParams.MATCH_PARENT;
+            lp.gravity = Gravity.TOP;
+            mWindowManager.addView(mOverlayView, lp);
+            isOverlayShown = true;
+        }
+    }
+
+    static public void removeOverlay() {
+        if (isOverlayShown) { // NEW check
+            mWindowManager.removeView(mOverlayView);
+            isOverlayShown = false;
+        }
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        removeOverlay();
     }
 
     @Override

@@ -13,6 +13,11 @@ import android.view.accessibility.AccessibilityNodeInfo;
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 
+import io.flutter.FlutterInjector;
+import io.flutter.embedding.engine.FlutterEngine;
+import io.flutter.embedding.engine.FlutterEngineCache;
+import io.flutter.embedding.engine.FlutterEngineGroup;
+import io.flutter.embedding.engine.dart.DartExecutor;
 import io.flutter.embedding.engine.plugins.FlutterPlugin;
 import io.flutter.embedding.engine.plugins.activity.ActivityAware;
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding;
@@ -30,6 +35,9 @@ public class FlutterAccessibilityServicePlugin implements FlutterPlugin, Activit
 
     private static final String CHANNEL_TAG = "x-slayer/accessibility_channel";
     private static final String EVENT_TAG = "x-slayer/accessibility_event";
+
+    public static final String CACHED_TAG = "cashedAccessibilityEngine";
+
 
     private MethodChannel channel;
     private AccessibilityReceiver accessibilityReceiver;
@@ -75,7 +83,7 @@ public class FlutterAccessibilityServicePlugin implements FlutterPlugin, Activit
             AccessibilityNodeInfo nodeInfo = AccessibilityListener.getNodeInfo();
             if (nodeInfo != null) {
                 AccessibilityNodeInfo nodeToClick = null;
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN_MR2) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
                     nodeToClick = Utils.findNode(nodeInfo, nodeId);
                 }
                 if (nodeToClick != null) {
@@ -92,6 +100,16 @@ public class FlutterAccessibilityServicePlugin implements FlutterPlugin, Activit
                 result.success(false);
             }
 
+        } else if (call.method.equals("showOverlayWindow")) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
+                AccessibilityListener.showOverlay();
+                result.success(true);
+            } else {
+                result.success(false);
+            }
+        } else if (call.method.equals("hideOverlayWindow")) {
+            AccessibilityListener.removeOverlay();
+            result.success(true);
         } else {
             result.notImplemented();
         }
@@ -146,6 +164,16 @@ public class FlutterAccessibilityServicePlugin implements FlutterPlugin, Activit
     public void onAttachedToActivity(@NonNull ActivityPluginBinding binding) {
         this.mActivity = binding.getActivity();
         binding.addActivityResultListener(this);
+        try {
+            FlutterEngineGroup enn = new FlutterEngineGroup(context);
+            DartExecutor.DartEntrypoint dEntry = new DartExecutor.DartEntrypoint(
+                    FlutterInjector.instance().flutterLoader().findAppBundlePath(),
+                    "accessibilityOverlay");
+            FlutterEngine engine = enn.createAndRunEngine(context, dEntry);
+            FlutterEngineCache.getInstance().put(CACHED_TAG, engine);
+        } catch (Exception exception) {
+            Log.e("ENGINE-ERROR", "onAttachedToActivity: " + exception.getMessage());
+        }
     }
 
     @Override

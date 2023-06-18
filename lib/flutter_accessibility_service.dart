@@ -85,4 +85,26 @@ class FlutterAccessibilityService {
       return false;
     }
   }
+
+  /// Show an overlay window of `TYPE_ACCESSIBILITY_OVERLAY`
+  static Future<bool> showOverlayWindow() async {
+    try {
+      return await _methodChannel.invokeMethod<bool?>('showOverlayWindow') ??
+          false;
+    } on PlatformException catch (error) {
+      log("$error");
+      return false;
+    }
+  }
+
+  /// Hide the overlay window
+  static Future<bool> hideOverlayWindow() async {
+    try {
+      return await _methodChannel.invokeMethod<bool?>('hideOverlayWindow') ??
+          false;
+    } on PlatformException catch (error) {
+      log("$error");
+      return false;
+    }
+  }
 }
