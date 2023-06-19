@@ -19,7 +19,7 @@ class BlockingOverlay extends StatelessWidget {
             ),
             SizedBox(height: 10.0),
             Text(
-              'This app is locked',
+              'This App Is Currently Locked',
               style: TextStyle(
                 color: Colors.black,
                 fontSize: 18.0,

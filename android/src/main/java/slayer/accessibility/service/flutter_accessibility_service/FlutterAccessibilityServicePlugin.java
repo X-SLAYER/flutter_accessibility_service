@@ -1,5 +1,7 @@
 package slayer.accessibility.service.flutter_accessibility_service;
 
+import static slayer.accessibility.service.flutter_accessibility_service.Constants.*;
+
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
@@ -35,7 +37,6 @@ public class FlutterAccessibilityServicePlugin implements FlutterPlugin, Activit
 
     private static final String CHANNEL_TAG = "x-slayer/accessibility_channel";
     private static final String EVENT_TAG = "x-slayer/accessibility_event";
-
     public static final String CACHED_TAG = "cashedAccessibilityEngine";
 
 
@@ -44,6 +45,8 @@ public class FlutterAccessibilityServicePlugin implements FlutterPlugin, Activit
     private EventChannel eventChannel;
     private Context context;
     private Activity mActivity;
+
+    private boolean supportOverlay = false;
 
     private Result pendingResult;
     final int REQUEST_CODE_FOR_ACCESSIBILITY = 167;
@@ -70,7 +73,7 @@ public class FlutterAccessibilityServicePlugin implements FlutterPlugin, Activit
         } else if (call.method.equals("takeScreenShot")) {
             if (Utils.isAccessibilitySettingsOn(context)) {
                 final Intent i = new Intent(context, AccessibilityListener.class);
-                i.putExtra(AccessibilityListener.INTENT_TAKE_SCREENSHOT, true);
+                i.putExtra(INTENT_TAKE_SCREENSHOT, true);
                 context.startService(i);
                 result.success(true);
             }
@@ -99,8 +102,11 @@ public class FlutterAccessibilityServicePlugin implements FlutterPlugin, Activit
             } else {
                 result.success(false);
             }
-
         } else if (call.method.equals("showOverlayWindow")) {
+            if (!supportOverlay) {
+                result.error("ERR:OVERLAY", "Add the overlay entry point to be able of using it", null);
+                return;
+            }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
                 AccessibilityListener.showOverlay();
                 result.success(true);
@@ -127,7 +133,7 @@ public class FlutterAccessibilityServicePlugin implements FlutterPlugin, Activit
         if (Utils.isAccessibilitySettingsOn(context)) {
             /// Set up receiver
             IntentFilter intentFilter = new IntentFilter();
-            intentFilter.addAction(AccessibilityListener.ACCESSIBILITY_INTENT);
+            intentFilter.addAction(ACCESSIBILITY_INTENT);
 
             accessibilityReceiver = new AccessibilityReceiver(events);
             context.registerReceiver(accessibilityReceiver, intentFilter);
@@ -171,7 +177,9 @@ public class FlutterAccessibilityServicePlugin implements FlutterPlugin, Activit
                     "accessibilityOverlay");
             FlutterEngine engine = enn.createAndRunEngine(context, dEntry);
             FlutterEngineCache.getInstance().put(CACHED_TAG, engine);
+            supportOverlay = true;
         } catch (Exception exception) {
+            supportOverlay = false;
             Log.e("ENGINE-ERROR", "onAttachedToActivity: " + exception.getMessage());
         }
     }

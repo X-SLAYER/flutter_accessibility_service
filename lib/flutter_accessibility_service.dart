@@ -87,6 +87,21 @@ class FlutterAccessibilityService {
   }
 
   /// Show an overlay window of `TYPE_ACCESSIBILITY_OVERLAY`
+  ///
+  /// Dont forget to add the overlay entrypoint in the main level.
+  ///
+  /// example:
+  /// ```dart
+  /// @pragma("vm:entry-point")
+  /// void accessibilityOverlay() {
+  ///   runApp(
+  ///     const MaterialApp(
+  ///       debugShowCheckedModeBanner: false,
+  ///       home: BlockingOverlay(),
+  ///     ),
+  ///   );
+  /// }
+  /// ```
   static Future<bool> showOverlayWindow() async {
     try {
       return await _methodChannel.invokeMethod<bool?>('showOverlayWindow') ??
