@@ -150,7 +150,7 @@ class _MyAppState extends State<MyApp> {
                     TextButton(
                       onPressed: () async {
                         await FlutterAccessibilityService.performGlobalAction(
-                          GlobalAction.globalActionTakeScreenshot,
+                          GlobalAction.globalActionHome,
                         );
                       },
                       child: const Text("Take ScreenShot"),

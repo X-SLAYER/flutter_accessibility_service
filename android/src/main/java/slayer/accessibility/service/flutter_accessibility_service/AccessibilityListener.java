@@ -113,12 +113,11 @@ public class AccessibilityListener extends AccessibilityService {
         sendBroadcast(intent);
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.R)
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         boolean globalAction = intent.getBooleanExtra(INTENT_GLOBAL_ACTION, false);
         boolean systemActions = intent.getBooleanExtra(INTENT_SYSTEM_GLOBAL_ACTIONS, false);
-        if (systemActions) {
+        if (systemActions && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
             List<Integer> actions = getSystemActions().stream().map(AccessibilityNodeInfo.AccessibilityAction::getId).collect(Collectors.toList());
             Intent broadcastIntent = new Intent(BROD_SYSTEM_GLOBAL_ACTIONS);
             broadcastIntent.putIntegerArrayListExtra("actions", new ArrayList<>(actions));
