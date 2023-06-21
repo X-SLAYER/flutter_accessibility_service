@@ -224,3 +224,59 @@ enum NodeAction {
 
   const NodeAction(this.id);
 }
+
+enum GlobalAction {
+  /// Action to show Launcher's all apps.
+  globalActionAccessibilityAllApps(14),
+
+  /// Action to trigger the Accessibility Button.
+  globalActionAccessibilityButton(11),
+
+  /// Action to bring up the Accessibility Button's chooser menu.
+  globalActionAccessibilityButtonChooser(12),
+
+  ///Action to trigger the Accessibility Shortcut.
+  /// This shortcut has a hardware trigger and can be activated by holding down the two volume keys.
+  globalActionAccessibilityShortcut(13),
+
+  /// ction to go back.
+  globalActionBack(1),
+
+  /// Action to dismiss the notification shade.
+  globalActionDismissNotificationShade(15),
+
+  /// Action to go home.
+  globalActionHome(2),
+
+  /// Action to send the KEYCODE_HEADSETHOOK KeyEvent, which is used to answer/hang up calls and play/stop media.
+  globalActionKeycodeHeadsethook(10),
+
+  /// Action to lock the screen.
+  globalActionLockScreen(8),
+
+  /// Action to open the notifications.
+  globalActionNotifications(4),
+
+  /// Action to open the power long-press dialog.
+  globalActionPowerDialog(6),
+
+  /// Action to open the quick settings.
+  globalActionQuickSettings(5),
+
+  /// Action to toggle showing the overview of recent apps.
+  /// Will fail on platforms that don't show recent apps.
+  globalActionRecents(3),
+
+  /// Action to toggle docking the current app's window.
+  globalActionTakeScreenshot(9),
+
+  /// Action to toggle docking the current app's window.
+  globalActionToggleSplitScreen(7),
+
+  /// Unknown Global action
+  unknown(null);
+
+  final int? id;
+
+  const GlobalAction(this.id);
+}

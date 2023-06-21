@@ -55,15 +55,11 @@ class AccessibilityEvent {
   /// https://developer.android.com/reference/android/view/accessibility/AccessibilityNodeInfo#getBoundsInScreen(android.graphics.Rect)
   ScreenBounds? screenBounds;
 
-  /// Get the node childrens and sub childrens text
-  /// https://developer.android.com/reference/android/view/accessibility/AccessibilityNodeInfo#getChild(int)
-  List<String>? nodesText;
-
   /// Get the node childrens available actions
   /// https://developer.android.com/reference/android/view/accessibility/AccessibilityNodeInfo#getViewIdResourceName()
   List<NodeAction>? actions;
 
-  /// Get sub childrens view's id and available actions
+  /// Get the node childrens and sub childrens info
   /// https://developer.android.com/reference/android/view/accessibility/AccessibilityNodeInfo#getViewIdResourceName()
   List<SubNodes>? subNodes;
 
@@ -81,7 +77,6 @@ class AccessibilityEvent {
     this.isFocused,
     this.isPip,
     this.screenBounds,
-    this.nodesText,
     this.actions,
   });
 
@@ -116,28 +111,10 @@ class AccessibilityEvent {
         ? ScreenBounds.fromMap(map['screenBounds'])
         : null;
     subNodes = map['subNodesActions'] != null
-        ? (map['subNodesActions'] as Map<dynamic, dynamic>)
-            .keys
-            .map(
-              (key) => SubNodes(
-                text: map['subNodesActions'][key]['text'],
-                nodeId: key,
-                actions: ((map['subNodesActions'][key]['actions'])
-                        as List<dynamic>)
-                    .map((e) =>
-                        (NodeAction.values
-                            .firstWhereOrNull((element) => element.id == e)) ??
-                        NodeAction.unknown)
-                    .toList(),
-              ),
-            )
+        ? (map['subNodesActions'] as List<dynamic>)
+            .map((e) => SubNodes.fromMap(e))
             .toList()
         : null;
-    nodesText = map['nodesText'] == null
-        ? []
-        : [
-            ...{...map['nodesText']}
-          ];
     actions = map['parentActions'] == null
         ? []
         : (map['parentActions'] as List<dynamic>)
@@ -164,9 +141,8 @@ class AccessibilityEvent {
        in Pip: $isPip
        window Type: $windowType
        Screen bounds: $screenBounds
-       Nodes Text: $nodesText
        actions: $actions
-       subNodes: $subNodes
+       subNodes: ${subNodes!.where((element) => element.text != null && element.nodeId != null)}
        )''';
   }
 }
@@ -214,13 +190,23 @@ class SubNodes {
     this.text,
   });
 
+  SubNodes.fromMap(Map<dynamic, dynamic> json) {
+    nodeId = json['id'];
+    actions = ((json['actions']) as List<dynamic>)
+        .map((e) =>
+            (NodeAction.values
+                .firstWhereOrNull((element) => element.id == e)) ??
+            NodeAction.unknown)
+        .toList();
+    text = json['text'];
+  }
+
   @override
   String toString() {
-    return ''' SubNodes(
+    return '''SubNodes(
     nodeId: $nodeId 
     Text: $text 
     Actions: $actions
-    )
-    ''';
+    )''';
   }
 }

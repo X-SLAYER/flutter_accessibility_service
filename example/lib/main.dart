@@ -55,13 +55,17 @@ class _MyAppState extends State<MyApp> {
       setState(() {
         events.add(event);
       });
-      log('$event');
       // automateYouTube(event);
+      if (event.packageName!.contains('youtube')) {
+        log('$event');
+      }
       if (event.packageName!.contains('youtube') && event.isFocused!) {
         eventDateTime = event.eventTime!;
         await FlutterAccessibilityService.showOverlayWindow();
-      } else if (!event.packageName!.contains('youtube') &&
-          eventDateTime.difference(event.eventTime!).inSeconds.abs() > 2) {
+      } else if (eventDateTime.difference(event.eventTime!).inSeconds.abs() >
+              2 ||
+          (event.eventType == EventType.typeWindowStateChanged &&
+              !event.isFocused!)) {
         await FlutterAccessibilityService.hideOverlayWindow();
       }
     });
@@ -69,32 +73,35 @@ class _MyAppState extends State<MyApp> {
 
   void automateYouTube(AccessibilityEvent event) async {
     if (!event.packageName!.contains('youtube')) return;
-    log("$event");
-    if (!foundSearchField) {
-      final searchField = event.subNodes!.firstWhereOrNull(
-        (element) => element.text == 'Search YouTube',
-      );
-      log('$searchField', name: 'Search Button only');
-      if (searchField != null) {
-        foundSearchField = await FlutterAccessibilityService.performAction(
-          searchField.nodeId!,
-          NodeAction.actionSetText,
-          'Eminem until i collapse',
-        );
-        if (!hasBeenClicked) {
-          final clickableOne = event.subNodes!.lastWhereOrNull(
-            (element) => element.nodeId!.contains('/text'),
-          );
-          log("$clickableOne", name: 'CLICKABLE ONE');
-          if (clickableOne != null) {
-            hasBeenClicked = await FlutterAccessibilityService.performAction(
-              clickableOne.nodeId!,
-              NodeAction.actionClearFocus,
-            );
-          }
-        }
-      }
+    log('$event');
+    final searchIt = event.subNodes!.firstWhereOrNull(
+      (element) => element.actions!.contains(NodeAction.actionScrollForward),
+    );
+    log('$searchIt', name: 'YES WE CAN');
+    if (searchIt != null) {
+      final status = await doAction(searchIt, NodeAction.actionScrollForward);
+
+      log('$status => ${searchIt.actions!.first}', name: 'Action done');
     }
+  }
+
+  Future<bool> doAction(
+    SubNodes node,
+    NodeAction action, [
+    dynamic argument,
+  ]) async {
+    if (node.nodeId == null && node.text == null) return false;
+    return node.nodeId != null
+        ? await FlutterAccessibilityService.performActionById(
+            node.nodeId!,
+            action,
+            argument,
+          )
+        : await FlutterAccessibilityService.performActionByText(
+            node.text!,
+            action,
+            argument,
+          );
   }
 
   @override
@@ -141,10 +148,20 @@ class _MyAppState extends State<MyApp> {
                       child: const Text("Stop Stream"),
                     ),
                     TextButton(
-                      onPressed: () {
-                        FlutterAccessibilityService.takeScreenShot();
+                      onPressed: () async {
+                        await FlutterAccessibilityService.performGlobalAction(
+                          GlobalAction.globalActionTakeScreenshot,
+                        );
                       },
                       child: const Text("Take ScreenShot"),
+                    ),
+                    TextButton(
+                      onPressed: () async {
+                        final list = await FlutterAccessibilityService
+                            .getSystemActions();
+                        log('$list');
+                      },
+                      child: const Text("List GlobalActions"),
                     ),
                   ],
                 ),
@@ -156,8 +173,7 @@ class _MyAppState extends State<MyApp> {
                   itemBuilder: (_, index) => ListTile(
                     title: Text(events[index]!.packageName!),
                     subtitle: Text(
-                      events[index]!
-                              .subNodes!
+                      (events[index]!.subNodes ?? [])
                               .map((e) => e.actions)
                               .expand((element) => element!)
                               .contains(NodeAction.actionClick)

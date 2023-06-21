@@ -16,7 +16,10 @@ public class Constants {
     public static String ACCESSIBILITY_WINDOW_TYPE = "windowType";
     public static String ACCESSIBILITY_SCREEN_BOUNDS = "screenBounds";
     public static String ACCESSIBILITY_NODES_TEXT = "nodesText";
-    public static final String INTENT_TAKE_SCREENSHOT = "TakeScreenshot";
     public static final String ACTION_LIST = "actionList";
     public static final String SUB_NODES_ACTIONS = "subNodesActionList";
+    public static final String INTENT_GLOBAL_ACTION = "performGlobal";
+    public static final String INTENT_GLOBAL_ACTION_ID = "actionId";
+    public static final String INTENT_SYSTEM_GLOBAL_ACTIONS = "globalSystemAction";
+    public static final String BROD_SYSTEM_GLOBAL_ACTIONS = "globalSystemActionBrod";
 }

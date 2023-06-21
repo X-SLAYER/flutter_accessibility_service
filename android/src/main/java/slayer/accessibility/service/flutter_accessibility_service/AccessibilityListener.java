@@ -12,17 +12,14 @@ import android.graphics.Rect;
 import android.os.Build;
 import android.util.Log;
 import android.view.Gravity;
-import android.view.View;
 import android.view.WindowManager;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.accessibility.AccessibilityWindowInfo;
-import android.widget.FrameLayout;
-import android.widget.RelativeLayout;
-import android.widget.TextView;
 
 import androidx.annotation.RequiresApi;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -36,7 +33,7 @@ import io.flutter.embedding.engine.FlutterEngineCache;
 public class AccessibilityListener extends AccessibilityService {
     private static WindowManager mWindowManager;
     private static FlutterView mOverlayView;
-    static private boolean isOverlayShown = false; // NEW flag
+    static private boolean isOverlayShown = false;
     private static AccessibilityNodeInfo nodeInfo;
 
     public static AccessibilityNodeInfo getNodeInfo() {
@@ -51,12 +48,11 @@ public class AccessibilityListener extends AccessibilityService {
         AccessibilityWindowInfo windowInfo = null;
         List<String> nextTexts = new ArrayList<>();
         List<Integer> actions = new ArrayList<>();
-        HashMap<String, HashMap<String, Object>> subNodeActions = new HashMap<>();
+        List<HashMap<String, Object>> subNodeActions = new ArrayList<>();
         nodeInfo = parentNodeInfo;
         if (parentNodeInfo == null) {
             return;
         }
-
         String packageName = parentNodeInfo.getPackageName().toString();
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -98,7 +94,7 @@ public class AccessibilityListener extends AccessibilityService {
         actions.addAll(parentNodeInfo.getActionList().stream().map(AccessibilityNodeInfo.AccessibilityAction::getId).collect(Collectors.toList()));
         //Gets actions this nodes.
         intent.putIntegerArrayListExtra(ACTION_LIST, (ArrayList<Integer>) actions);
-        intent.putExtra(SUB_NODES_ACTIONS, subNodeActions);
+        intent.putExtra(SUB_NODES_ACTIONS, (Serializable) subNodeActions);
         if (windowInfo != null) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 // Gets if this window is active.
@@ -117,11 +113,20 @@ public class AccessibilityListener extends AccessibilityService {
         sendBroadcast(intent);
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.R)
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        boolean takeScreenShot = intent.getBooleanExtra(INTENT_TAKE_SCREENSHOT, false);
-        if (takeScreenShot) {
-            performGlobalAction(AccessibilityService.GLOBAL_ACTION_TAKE_SCREENSHOT);
+        boolean globalAction = intent.getBooleanExtra(INTENT_GLOBAL_ACTION, false);
+        boolean systemActions = intent.getBooleanExtra(INTENT_SYSTEM_GLOBAL_ACTIONS, false);
+        if (systemActions) {
+            List<Integer> actions = getSystemActions().stream().map(AccessibilityNodeInfo.AccessibilityAction::getId).collect(Collectors.toList());
+            Intent broadcastIntent = new Intent(BROD_SYSTEM_GLOBAL_ACTIONS);
+            broadcastIntent.putIntegerArrayListExtra("actions", new ArrayList<>(actions));
+            sendBroadcast(broadcastIntent);
+        }
+        if (globalAction) {
+            int actionId = intent.getIntExtra(INTENT_GLOBAL_ACTION_ID, 8);
+            performGlobalAction(actionId);
         }
         Log.d("CMD_STARTED", "onStartCommand: " + startId);
         return START_STICKY;
@@ -140,14 +145,13 @@ public class AccessibilityListener extends AccessibilityService {
 
     @RequiresApi(api = Build.VERSION_CODES.N)
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
-    void getIdResourceNames(AccessibilityNodeInfo node, HashMap<String, HashMap<String, Object>> arr) {
+    void getIdResourceNames(AccessibilityNodeInfo node, List<HashMap<String, Object>> arr) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
-            if (node.getViewIdResourceName() != null) {
-                HashMap<String, Object> nested = new HashMap<>();
-                nested.put("text", node.getText());
-                nested.put("actions", node.getActionList().stream().map(AccessibilityNodeInfo.AccessibilityAction::getId).collect(Collectors.toList()));
-                arr.put(node.getViewIdResourceName(), nested);
-            }
+            HashMap<String, Object> nested = new HashMap<>();
+            nested.put("id", node.getViewIdResourceName());
+            nested.put("text", node.getText());
+            nested.put("actions", node.getActionList().stream().map(AccessibilityNodeInfo.AccessibilityAction::getId).collect(Collectors.toList()));
+            arr.add(nested);
             for (int i = 0; i < node.getChildCount(); i++) {
                 AccessibilityNodeInfo child = node.getChild(i);
                 if (child == null)
@@ -197,7 +201,7 @@ public class AccessibilityListener extends AccessibilityService {
     }
 
     static public void removeOverlay() {
-        if (isOverlayShown) { // NEW check
+        if (isOverlayShown) {
             mWindowManager.removeView(mOverlayView);
             isOverlayShown = false;
         }

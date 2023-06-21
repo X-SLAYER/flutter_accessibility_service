@@ -52,6 +52,22 @@ public class Utils {
         return null;
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR2)
+    static AccessibilityNodeInfo findNodeByText(AccessibilityNodeInfo nodeInfo, String text) {
+        if (nodeInfo.getText() != null && nodeInfo.getText().equals(text)) {
+            return nodeInfo;
+        }
+        for (int i = 0; i < nodeInfo.getChildCount(); i++) {
+            AccessibilityNodeInfo child = nodeInfo.getChild(i);
+            AccessibilityNodeInfo result = findNodeByText(child, text);
+            if (result != null) {
+                return result;
+            }
+        }
+        return null;
+    }
+
+
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     static Bundle bundleIdentifier(Integer actionType, Object extra) {
         Bundle arguments = new Bundle();

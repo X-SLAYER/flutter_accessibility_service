@@ -50,21 +50,10 @@ class FlutterAccessibilityService {
     }
   }
 
-  /// Take a system screenshot and save it to the device's external storage.
-  static Future<bool> takeScreenShot() async {
-    try {
-      return await _methodChannel.invokeMethod<bool?>('takeScreenShot') ??
-          false;
-    } on PlatformException catch (error) {
-      log("$error");
-      return false;
-    }
-  }
-
-  /// An action that can be performed on an `AccessibilityNodeInfo`
+  /// An action that can be performed on an `AccessibilityNodeInfo` by nodeId
   /// pass the necessary arguments depends on each action to avoid any errors
   /// See more: https://developer.android.com/reference/android/view/accessibility/AccessibilityNodeInfo.AccessibilityAction
-  static Future<bool> performAction(
+  static Future<bool> performActionById(
     String nodeId,
     NodeAction action, [
     dynamic arguments,
@@ -72,9 +61,34 @@ class FlutterAccessibilityService {
     try {
       if (action == NodeAction.unknown) return false;
       return await _methodChannel.invokeMethod<bool?>(
-            'performAction',
+            'performActionById',
             {
               "nodeId": nodeId,
+              "nodeAction": action.id,
+              "extras": arguments,
+            },
+          ) ??
+          false;
+    } on PlatformException catch (error) {
+      log("$error");
+      return false;
+    }
+  }
+
+  /// An action that can be performed on an `AccessibilityNodeInfo` by Text
+  /// pass the necessary arguments depends on each action to avoid any errors
+  /// See more: https://developer.android.com/reference/android/view/accessibility/AccessibilityNodeInfo.AccessibilityAction
+  static Future<bool> performActionByText(
+    String text,
+    NodeAction action, [
+    dynamic arguments,
+  ]) async {
+    try {
+      if (action == NodeAction.unknown) return false;
+      return await _methodChannel.invokeMethod<bool?>(
+            'performActionByText',
+            {
+              "text": text,
               "nodeAction": action.id,
               "extras": arguments,
             },
@@ -116,6 +130,47 @@ class FlutterAccessibilityService {
   static Future<bool> hideOverlayWindow() async {
     try {
       return await _methodChannel.invokeMethod<bool?>('hideOverlayWindow') ??
+          false;
+    } on PlatformException catch (error) {
+      log("$error");
+      return false;
+    }
+  }
+
+  /// Returns a list of system actions available in the system right now.
+  /// System actions that correspond to the `GlobalAction`
+  static Future<List<GlobalAction>> getSystemActions() async {
+    try {
+      final _list = await _methodChannel
+              .invokeMethod<List<dynamic>>('getSystemActions') ??
+          [];
+      return _list
+          .map(
+            (e) => GlobalAction.values.firstWhere(
+              (element) => element.id == e,
+              orElse: () => GlobalAction.unknown,
+            ),
+          )
+          .toList();
+    } on PlatformException catch (error) {
+      log("$error");
+      return [];
+    }
+  }
+
+  /// Performs a global action.
+  /// Such an action can be performed at any moment regardless of the current application or user location in that application
+  /// For example going back, going home, opening recents, etc.
+  ///
+  /// Note: The global action themselves give no information about the current availability of their corresponding actions.
+  /// To determine if a global action is available, use `getSystemActions()`
+  static Future<bool> performGlobalAction(GlobalAction action) async {
+    try {
+      if (action == GlobalAction.unknown) return false;
+      return await _methodChannel.invokeMethod<bool?>(
+            'performGlobalAction',
+            {"action": action.id},
+          ) ??
           false;
     } on PlatformException catch (error) {
       log("$error");
