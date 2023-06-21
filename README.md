@@ -127,13 +127,6 @@ The `AccessibilityEvent` provides:
 
 ### AUTOMATION & ACTIONS
 
-Take a system screenshot
-
-```dart
-  /// Take a system screenshot
-  await FlutterAccessibilityService.takeScreenShot();
-```
-
 Perform actions with `Accessibility Service`
 
 ```dart
@@ -220,7 +213,6 @@ For example going back, going home, opening recents, etc.
 Returns a list of system actions available in the system right now.
 
 ```dart
-  final list = await FlutterAccessibilityService
-      .getSystemActions();
+  final list = await FlutterAccessibilityService.getSystemActions();
   print(list); // [GlobalAction.globalActionAccessibilityAllApps,GlobalAction.globalActionTakeScreenshot .....]
 ```
