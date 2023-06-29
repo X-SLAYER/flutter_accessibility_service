@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 
@@ -20,7 +21,7 @@ class FlutterAccessibilityService {
     if (Platform.isAndroid) {
       _stream ??=
           _eventChannel.receiveBroadcastStream().map<AccessibilityEvent>(
-                (event) => AccessibilityEvent.fromMap(event),
+                (event) => AccessibilityEvent.fromMap(jsonDecode(event)),
               );
       return _stream!;
     }
@@ -64,31 +65,6 @@ class FlutterAccessibilityService {
             'performActionById',
             {
               "nodeId": nodeId,
-              "nodeAction": action.id,
-              "extras": arguments,
-            },
-          ) ??
-          false;
-    } on PlatformException catch (error) {
-      log("$error");
-      return false;
-    }
-  }
-
-  /// An action that can be performed on an `AccessibilityNodeInfo` by Text
-  /// pass the necessary arguments depends on each action to avoid any errors
-  /// See more: https://developer.android.com/reference/android/view/accessibility/AccessibilityNodeInfo.AccessibilityAction
-  static Future<bool> performActionByText(
-    String text,
-    NodeAction action, [
-    dynamic arguments,
-  ]) async {
-    try {
-      if (action == NodeAction.unknown) return false;
-      return await _methodChannel.invokeMethod<bool?>(
-            'performActionByText',
-            {
-              "text": text,
               "nodeAction": action.id,
               "extras": arguments,
             },

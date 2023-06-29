@@ -6,11 +6,13 @@ import static slayer.accessibility.service.flutter_accessibility_service.Flutter
 import android.accessibilityservice.AccessibilityService;
 import android.annotation.TargetApi;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.os.Build;
 import android.util.Log;
+import android.util.LruCache;
 import android.view.Gravity;
 import android.view.WindowManager;
 import android.view.accessibility.AccessibilityEvent;
@@ -19,7 +21,9 @@ import android.view.accessibility.AccessibilityWindowInfo;
 
 import androidx.annotation.RequiresApi;
 
-import java.io.Serializable;
+
+import com.google.gson.Gson;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -34,83 +38,81 @@ public class AccessibilityListener extends AccessibilityService {
     private static WindowManager mWindowManager;
     private static FlutterView mOverlayView;
     static private boolean isOverlayShown = false;
-    private static AccessibilityNodeInfo nodeInfo;
+    private static final int CACHE_SIZE = 1000;
+    private static LruCache<String, AccessibilityNodeInfo> nodeMap =
+            new LruCache<>(CACHE_SIZE);
 
-    public static AccessibilityNodeInfo getNodeInfo() {
-        return nodeInfo;
+    public static AccessibilityNodeInfo getNodeInfo(String id) {
+        return nodeMap.get(id);
     }
 
     @RequiresApi(api = Build.VERSION_CODES.N)
     @Override
     public void onAccessibilityEvent(AccessibilityEvent accessibilityEvent) {
-        final int eventType = accessibilityEvent.getEventType();
-        AccessibilityNodeInfo parentNodeInfo = accessibilityEvent.getSource();
-        AccessibilityWindowInfo windowInfo = null;
-        List<String> nextTexts = new ArrayList<>();
-        List<Integer> actions = new ArrayList<>();
-        List<HashMap<String, Object>> subNodeActions = new ArrayList<>();
-        nodeInfo = parentNodeInfo;
-        if (parentNodeInfo == null) {
-            return;
-        }
-        String packageName = parentNodeInfo.getPackageName().toString();
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            windowInfo = parentNodeInfo.getWindow();
-        }
-
-
-        Intent intent = new Intent(ACCESSIBILITY_INTENT);
-        //Gets the package name of the source
-        intent.putExtra(ACCESSIBILITY_NAME, packageName);
-        //Gets the event type
-        intent.putExtra(ACCESSIBILITY_EVENT_TYPE, eventType);
-        //Gets the performed action that triggered this event.
-        intent.putExtra(ACCESSIBILITY_ACTION, accessibilityEvent.getAction());
-        //Gets The event time.
-        intent.putExtra(ACCESSIBILITY_EVENT_TIME, accessibilityEvent.getEventTime());
-        //Gets the movement granularity that was traversed.
-        intent.putExtra(ACCESSIBILITY_MOVEMENT, accessibilityEvent.getMovementGranularity());
-
-        // Gets the node bounds in screen coordinates.
-        Rect rect = new Rect();
-        parentNodeInfo.getBoundsInScreen(rect);
-        intent.putExtra(ACCESSIBILITY_SCREEN_BOUNDS, getBoundingPoints(rect));
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            //Gets the bit mask of change types signaled by a TYPE_WINDOW_CONTENT_CHANGED event or TYPE_WINDOW_STATE_CHANGED. A single event may represent multiple change types.
-            intent.putExtra(ACCESSIBILITY_CHANGES_TYPES, accessibilityEvent.getContentChangeTypes());
-        }
-        if (parentNodeInfo.getText() != null) {
-            //Gets the text of this node.
-            intent.putExtra(ACCESSIBILITY_TEXT, parentNodeInfo.getText().toString());
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
-            intent.putExtra(ACCESSIBILITY_NODE_ID, parentNodeInfo.getViewIdResourceName());
-        }
-        getNextTexts(parentNodeInfo, nextTexts);
-        getIdResourceNames(parentNodeInfo, subNodeActions);
-        //Gets the text of sub nodes.
-        intent.putStringArrayListExtra(ACCESSIBILITY_NODES_TEXT, (ArrayList<String>) nextTexts);
-        actions.addAll(parentNodeInfo.getActionList().stream().map(AccessibilityNodeInfo.AccessibilityAction::getId).collect(Collectors.toList()));
-        //Gets actions this nodes.
-        intent.putIntegerArrayListExtra(ACTION_LIST, (ArrayList<Integer>) actions);
-        intent.putExtra(SUB_NODES_ACTIONS, (Serializable) subNodeActions);
-        if (windowInfo != null) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                // Gets if this window is active.
-                intent.putExtra(ACCESSIBILITY_IS_ACTIVE, windowInfo.isActive());
-                // Gets if this window has input focus.
-                intent.putExtra(ACCESSIBILITY_IS_FOCUSED, windowInfo.isFocused());
-                // Gets the type of the window.
-                intent.putExtra(ACCESSIBILITY_WINDOW_TYPE, windowInfo.getType());
-                // Check if the window is in picture-in-picture mode.
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    intent.putExtra(ACCESSIBILITY_IS_PIP, windowInfo.isInPictureInPictureMode());
-                }
-
+        try {
+            final int eventType = accessibilityEvent.getEventType();
+            AccessibilityNodeInfo parentNodeInfo = accessibilityEvent.getSource();
+            AccessibilityWindowInfo windowInfo = null;
+            List<String> nextTexts = new ArrayList<>();
+            List<Integer> actions = new ArrayList<>();
+            List<HashMap<String, Object>> subNodeActions = new ArrayList<>();
+            HashMap<String, Object> data = new HashMap<>();
+            if (parentNodeInfo == null) {
+                return;
             }
+            String nodeId = generateNodeId(parentNodeInfo);
+            String packageName = parentNodeInfo.getPackageName().toString();
+            storeNode(nodeId, parentNodeInfo);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                windowInfo = parentNodeInfo.getWindow();
+            }
+
+
+            Intent intent = new Intent(ACCESSIBILITY_INTENT);
+
+            data.put("mapId", nodeId);
+            data.put("packageName", packageName);
+            data.put("eventType", eventType);
+            data.put("actionType", accessibilityEvent.getAction());
+            data.put("eventTime", accessibilityEvent.getEventTime());
+            data.put("movementGranularity", accessibilityEvent.getMovementGranularity());
+            Rect rect = new Rect();
+            parentNodeInfo.getBoundsInScreen(rect);
+            data.put("screenBounds", getBoundingPoints(rect));
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                data.put("contentChangeTypes", accessibilityEvent.getContentChangeTypes());
+            }
+            if (parentNodeInfo.getText() != null) {
+                data.put("capturedText", parentNodeInfo.getText().toString());
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
+                data.put("nodeId", parentNodeInfo.getViewIdResourceName());
+            }
+            getSubNodes(parentNodeInfo, subNodeActions);
+            data.put("nodesText", nextTexts);
+            actions.addAll(parentNodeInfo.getActionList().stream().map(AccessibilityNodeInfo.AccessibilityAction::getId).collect(Collectors.toList()));
+            data.put("parentActions", actions);
+            data.put("subNodesActions", subNodeActions);
+            data.put("isClickable", parentNodeInfo.isClickable());
+            data.put("isScrollable", parentNodeInfo.isScrollable());
+            data.put("isFocusable", parentNodeInfo.isFocusable());
+            data.put("isCheckable", parentNodeInfo.isCheckable());
+            data.put("isLongClickable", parentNodeInfo.isLongClickable());
+            data.put("isEditable", parentNodeInfo.isEditable());
+            if (windowInfo != null) {
+                data.put("isActive", windowInfo.isActive());
+                data.put("isFocused", windowInfo.isFocused());
+                data.put("windowType", windowInfo.getType());
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    data.put("isPip", windowInfo.isInPictureInPictureMode());
+                }
+            }
+            storeToSharedPrefs(data);
+            intent.putExtra(SEND_BROADCAST, true);
+            sendBroadcast(intent);
+        } catch (Exception ex) {
+            Log.e("EVENT", "onAccessibilityEvent: " + ex.getMessage());
         }
-        sendBroadcast(intent);
     }
 
     @Override
@@ -131,31 +133,40 @@ public class AccessibilityListener extends AccessibilityService {
         return START_STICKY;
     }
 
-    void getNextTexts(AccessibilityNodeInfo node, List<String> arr) {
-        if (node.getText() != null && node.getText().length() > 0)
-            arr.add(node.getText().toString());
-        for (int i = 0; i < node.getChildCount(); i++) {
-            AccessibilityNodeInfo child = node.getChild(i);
-            if (child == null)
-                continue;
-            getNextTexts(child, arr);
-        }
-    }
 
     @RequiresApi(api = Build.VERSION_CODES.N)
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
-    void getIdResourceNames(AccessibilityNodeInfo node, List<HashMap<String, Object>> arr) {
+    void getSubNodes(AccessibilityNodeInfo node, List<HashMap<String, Object>> arr) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
+            String mapId = generateNodeId(node);
+            AccessibilityWindowInfo windowInfo = null;
             HashMap<String, Object> nested = new HashMap<>();
-            nested.put("id", node.getViewIdResourceName());
-            nested.put("text", node.getText());
-            nested.put("actions", node.getActionList().stream().map(AccessibilityNodeInfo.AccessibilityAction::getId).collect(Collectors.toList()));
+            Rect rect = new Rect();
+            node.getBoundsInScreen(rect);
+            windowInfo = node.getWindow();
+            nested.put("mapId", mapId);
+            nested.put("nodeId", node.getViewIdResourceName());
+            nested.put("capturedText", node.getText());
+            nested.put("screenBounds", getBoundingPoints(rect));
+            nested.put("isClickable", node.isClickable());
+            nested.put("isScrollable", node.isScrollable());
+            nested.put("isFocusable", node.isFocusable());
+            nested.put("isCheckable", node.isCheckable());
+            nested.put("isLongClickable", node.isLongClickable());
+            nested.put("isEditable", node.isEditable());
+            nested.put("parentActions", node.getActionList().stream().map(AccessibilityNodeInfo.AccessibilityAction::getId).collect(Collectors.toList()));
+            if (windowInfo != null) {
+                nested.put("isActive", node.getWindow().isActive());
+                nested.put("isFocused", node.getWindow().isFocused());
+                nested.put("windowType", node.getWindow().getType());
+            }
             arr.add(nested);
+            storeNode(mapId, node);
             for (int i = 0; i < node.getChildCount(); i++) {
                 AccessibilityNodeInfo child = node.getChild(i);
                 if (child == null)
                     continue;
-                getIdResourceNames(child, arr);
+                getSubNodes(child, arr);
             }
         }
     }
@@ -210,9 +221,34 @@ public class AccessibilityListener extends AccessibilityService {
     public void onDestroy() {
         super.onDestroy();
         removeOverlay();
+        SharedPreferences sharedPreferences = getSharedPreferences(SHARED_PREFS_TAG, MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.remove(ACCESSIBILITY_NODE).commit();
     }
 
     @Override
     public void onInterrupt() {
     }
+
+
+    private String generateNodeId(AccessibilityNodeInfo node) {
+        return node.getWindowId() + "_" + node.getClassName() + "_" + node.getText() + "_" + node.getContentDescription(); //UUID.randomUUID().toString();
+    }
+
+    private void storeNode(String uuid, AccessibilityNodeInfo node) {
+        if (node == null) {
+            return;
+        }
+        nodeMap.put(uuid, node);
+    }
+
+    void storeToSharedPrefs(HashMap<String, Object> data) {
+        SharedPreferences sharedPreferences = getSharedPreferences(SHARED_PREFS_TAG, MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        Gson gson = new Gson();
+        String json = gson.toJson(data);
+        editor.putString(ACCESSIBILITY_NODE, json);
+        editor.apply();
+    }
+
 }

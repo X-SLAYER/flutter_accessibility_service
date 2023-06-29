@@ -1,6 +1,9 @@
 package slayer.accessibility.service.flutter_accessibility_service;
 
+import static android.content.Context.MODE_PRIVATE;
+
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
@@ -8,6 +11,8 @@ import android.text.TextUtils;
 import android.view.accessibility.AccessibilityNodeInfo;
 
 import androidx.annotation.RequiresApi;
+
+import org.json.JSONObject;
 
 import java.util.HashMap;
 

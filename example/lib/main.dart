@@ -6,8 +6,9 @@ import 'package:flutter_accessibility_service/accessibility_event.dart';
 import 'package:flutter_accessibility_service/constants.dart';
 import 'package:flutter_accessibility_service/flutter_accessibility_service.dart';
 
-import 'package:collection/collection.dart';
 import 'package:flutter_accessibility_service_example/overlay.dart';
+
+import 'package:collection/collection.dart';
 
 @pragma("vm:entry-point")
 void accessibilityOverlay() {
@@ -34,9 +35,9 @@ class _MyAppState extends State<MyApp> {
   StreamSubscription<AccessibilityEvent>? _subscription;
   List<AccessibilityEvent?> events = [];
   DateTime eventDateTime = DateTime.now();
-
   bool foundSearchField = false;
-  bool hasBeenClicked = false;
+  bool setText = false;
+  bool clickFirstSearch = false;
 
   @override
   void initState() {
@@ -45,7 +46,7 @@ class _MyAppState extends State<MyApp> {
 
   void handleAccessiblityStream() {
     foundSearchField = false;
-    hasBeenClicked = false;
+    setText = false;
     if (_subscription?.isPaused ?? false) {
       _subscription?.resume();
       return;
@@ -55,53 +56,94 @@ class _MyAppState extends State<MyApp> {
       setState(() {
         events.add(event);
       });
-      // automateYouTube(event);
-      if (event.packageName!.contains('youtube')) {
-        log('$event');
-      }
-      if (event.packageName!.contains('youtube') && event.isFocused!) {
-        eventDateTime = event.eventTime!;
-        await FlutterAccessibilityService.showOverlayWindow();
-      } else if (eventDateTime.difference(event.eventTime!).inSeconds.abs() >
-              2 ||
-          (event.eventType == EventType.typeWindowStateChanged &&
-              !event.isFocused!)) {
-        await FlutterAccessibilityService.hideOverlayWindow();
-      }
+      // automateScroll(event);
+      // log("$event");
+      automateWikipedia(event);
+      // handleOverlay(event);
     });
   }
 
-  void automateYouTube(AccessibilityEvent event) async {
-    if (!event.packageName!.contains('youtube')) return;
-    log('$event');
-    final searchIt = event.subNodes!.firstWhereOrNull(
-      (element) => element.actions!.contains(NodeAction.actionScrollForward),
-    );
-    log('$searchIt', name: 'YES WE CAN');
-    if (searchIt != null) {
-      final status = await doAction(searchIt, NodeAction.actionScrollForward);
+  void handleOverlay(AccessibilityEvent event) async {
+    if (event.packageName!.contains('youtube')) {
+      log('$event');
+    }
+    if (event.packageName!.contains('youtube') && event.isFocused!) {
+      eventDateTime = event.eventTime!;
+      await FlutterAccessibilityService.showOverlayWindow();
+    } else if (eventDateTime.difference(event.eventTime!).inSeconds.abs() > 2 ||
+        (event.eventType == EventType.typeWindowStateChanged &&
+            !event.isFocused!)) {
+      await FlutterAccessibilityService.hideOverlayWindow();
+    }
+  }
 
-      log('$status => ${searchIt.actions!.first}', name: 'Action done');
+  void automateWikipedia(AccessibilityEvent event) async {
+    if (!event.packageName!.contains('wikipedia')) return;
+    log('$event');
+    final searchIt = [...event.subNodes!, event].firstWhereOrNull(
+      (element) => element.text == 'Search Wikipedia' && element.isClickable!,
+    );
+    if (searchIt != null) {
+      await doAction(searchIt, NodeAction.actionClick);
+      final editField = [...event.subNodes!, event].firstWhereOrNull(
+        (element) => element.text == 'Search Wikipedia' && element.isEditable!,
+      );
+      if (editField != null) {
+        await doAction(editField, NodeAction.actionSetText, "Lionel Messi");
+      }
+      final item = [...event.subNodes!, event].firstWhereOrNull(
+        (element) => element.text == 'Messi–Ronaldo rivalry',
+      );
+      if (item != null) {
+        await doAction(item, NodeAction.actionSelect);
+      }
     }
   }
 
   Future<bool> doAction(
-    SubNodes node,
+    AccessibilityEvent node,
     NodeAction action, [
     dynamic argument,
   ]) async {
     if (node.nodeId == null && node.text == null) return false;
-    return node.nodeId != null
+    return node.mapId != null
         ? await FlutterAccessibilityService.performActionById(
-            node.nodeId!,
+            node.mapId!,
             action,
             argument,
           )
-        : await FlutterAccessibilityService.performActionByText(
-            node.text!,
-            action,
-            argument,
-          );
+        : false;
+  }
+
+  void automateScroll(AccessibilityEvent node) async {
+    if (!node.packageName!.contains('youtube')) return;
+    log("$node");
+    if (node.isFocused!) {
+      final scrollableNode = findScrollableNode(node);
+      log('$scrollableNode', name: 'SCROLLABLE- XX');
+      if (scrollableNode != null) {
+        await FlutterAccessibilityService.performActionById(
+          node.mapId!,
+          NodeAction.actionScrollForward,
+        );
+      }
+    }
+  }
+
+  AccessibilityEvent? findScrollableNode(AccessibilityEvent rootNode) {
+    if (rootNode.isScrollable! &&
+        rootNode.actions!.contains(NodeAction.actionScrollForward)) {
+      return rootNode;
+    }
+    if (rootNode.subNodes!.isEmpty) return null;
+    for (int i = 0; i < rootNode.subNodes!.length; i++) {
+      final childNode = rootNode.subNodes![i];
+      final scrollableChild = findScrollableNode(childNode);
+      if (scrollableChild != null) {
+        return scrollableChild;
+      }
+    }
+    return null;
   }
 
   @override

@@ -108,26 +108,19 @@ public class FlutterAccessibilityServicePlugin implements FlutterPlugin, Activit
             Integer action = (Integer) call.argument("nodeAction");
             Object extras = call.argument("extras");
             Bundle arguments = Utils.bundleIdentifier(action, extras);
-            AccessibilityNodeInfo nodeInfo = AccessibilityListener.getNodeInfo();
+            AccessibilityNodeInfo nodeInfo = AccessibilityListener.getNodeInfo(nodeId);
             if (nodeInfo != null) {
-                AccessibilityNodeInfo nodeToClick = null;
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
-                    nodeToClick = Utils.findNode(nodeInfo, nodeId);
-                }
-                if (nodeToClick != null) {
-                    if (arguments == null) {
-                        nodeToClick.performAction(action);
-                    } else {
-                        nodeToClick.performAction(action, arguments);
-                    }
-                    result.success(true);
+                if (arguments == null) {
+                    nodeInfo.performAction(action);
                 } else {
-                    result.success(false);
+                    nodeInfo.performAction(action, arguments);
                 }
+                result.success(true);
             } else {
                 result.success(false);
             }
-        } else if (call.method.equals("performActionByText")) {
+        }
+     /*   else if (call.method.equals("performActionByText")) {
             String text = call.argument("text");
             Integer action = (Integer) call.argument("nodeAction");
             Object extras = call.argument("extras");
@@ -151,7 +144,8 @@ public class FlutterAccessibilityServicePlugin implements FlutterPlugin, Activit
             } else {
                 result.success(false);
             }
-        } else if (call.method.equals("showOverlayWindow")) {
+        } */
+        else if (call.method.equals("showOverlayWindow")) {
             if (!supportOverlay) {
                 result.error("ERR:OVERLAY", "Add the overlay entry point to be able of using it", null);
                 return;
@@ -168,7 +162,6 @@ public class FlutterAccessibilityServicePlugin implements FlutterPlugin, Activit
         } else {
             result.notImplemented();
         }
-
     }
 
     @Override

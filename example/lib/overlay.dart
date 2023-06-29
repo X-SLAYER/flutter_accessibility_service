@@ -5,24 +5,23 @@ class BlockingOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Material(
+    return Material(
       color: Colors.white,
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.lock_clock,
-              color: Colors.red,
-              size: 70.0,
+            Image.network(
+              'https://i.pinimg.com/736x/87/43/a1/8743a10b2b1958f8541af429ecf7e03e.jpg',
+              width: 120.0,
             ),
-            SizedBox(height: 10.0),
-            Text(
-              'This App Is Currently Locked',
+            const SizedBox(height: 15.0),
+            const Text(
+              'Ayo here me out',
               style: TextStyle(
                 color: Colors.black,
-                fontSize: 18.0,
+                fontSize: 25.0,
               ),
             ),
           ],
