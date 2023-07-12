@@ -37,7 +37,7 @@ public class AccessibilityListener extends AccessibilityService {
         AccessibilityNodeInfo parentNodeInfo = accessibilityEvent.getSource();
         AccessibilityWindowInfo windowInfo = null;
         List<String> nextTexts = new ArrayList<>();
-
+        List<AccessibilityNodeInfo> traversedNodes = new ArrayList<>();
 
         if (parentNodeInfo == null) {
             return;
@@ -74,7 +74,7 @@ public class AccessibilityListener extends AccessibilityService {
             //Gets the text of this node.
             intent.putExtra(ACCESSIBILITY_TEXT, parentNodeInfo.getText().toString());
         }
-        getNextTexts(parentNodeInfo, nextTexts);
+        getNextTexts(parentNodeInfo, nextTexts, traversedNodes);
 
         //Gets the text of sub nodes.
         intent.putStringArrayListExtra(ACCESSIBILITY_NODES_TEXT, (ArrayList<String>) nextTexts);
@@ -98,16 +98,31 @@ public class AccessibilityListener extends AccessibilityService {
     }
 
 
-    void getNextTexts(AccessibilityNodeInfo node, List<String> arr) {
-        if (node.getText() != null && node.getText().length() > 0)
-            arr.add(node.getText().toString());
+    void getNextTexts(AccessibilityNodeInfo node, List<String> arr, List<AccessibilityNodeInfo> traversedNodes) {
+        if (node == null) return;
+        if (traversedNodes.contains(node)) return;
+        // if it's not traversed visit it
+        traversedNodes.add(node);
+        // prefer content description over text, following android talkback src code
+        // https://github.com/google/talkback/blob/bdead86e21beae508fa1fd7a24a06608485e1c29/utils/src/main/java/com/google/android/accessibility/utils/AccessibilityNodeInfoUtils.java#L368
+        String nodeText = "";
+        if (node.isVisibleToUser()) {
+            if (node.getContentDescription() != null && node.getContentDescription().length() > 0) {
+                nodeText = node.getContentDescription().toString();
+            } else {
+                if (node.getText() != null && node.getText().length() > 0) {
+                    nodeText = node.getText().toString();
+                }
+            }
+        }
+        if (!nodeText.isEmpty()) {
+            arr.add(nodeText);
+        }
+        
         for (int i = 0; i < node.getChildCount(); i++) {
             AccessibilityNodeInfo child = node.getChild(i);
-            if (child == null)
-                continue;
-            getNextTexts(child, arr);
+            getNextTexts(child, arr, traversedNodes);
         }
-
     }
 
     private HashMap<String, Integer> getBoundingPoints(Rect rect) {
