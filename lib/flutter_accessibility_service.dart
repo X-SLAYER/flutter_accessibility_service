@@ -54,8 +54,8 @@ class FlutterAccessibilityService {
   /// An action that can be performed on an `AccessibilityNodeInfo` by nodeId
   /// pass the necessary arguments depends on each action to avoid any errors
   /// See more: https://developer.android.com/reference/android/view/accessibility/AccessibilityNodeInfo.AccessibilityAction
-  static Future<bool> performActionById(
-    String nodeId,
+  static Future<bool> performAction(
+    AccessibilityEvent event,
     NodeAction action, [
     dynamic arguments,
   ]) async {
@@ -64,7 +64,7 @@ class FlutterAccessibilityService {
       return await _methodChannel.invokeMethod<bool?>(
             'performActionById',
             {
-              "nodeId": nodeId,
+              "nodeId": event.mapId,
               "nodeAction": action.id,
               "extras": arguments,
             },

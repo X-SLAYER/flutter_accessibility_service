@@ -58,7 +58,7 @@ class _MyAppState extends State<MyApp> {
       });
       // automateScroll(event);
       // log("$event");
-      automateWikipedia(event);
+      // automateWikipedia(event);
       // handleOverlay(event);
     });
   }
@@ -83,6 +83,7 @@ class _MyAppState extends State<MyApp> {
     final searchIt = [...event.subNodes!, event].firstWhereOrNull(
       (element) => element.text == 'Search Wikipedia' && element.isClickable!,
     );
+    log("Searchable Field: $searchIt");
     if (searchIt != null) {
       await doAction(searchIt, NodeAction.actionClick);
       final editField = [...event.subNodes!, event].firstWhereOrNull(
@@ -105,14 +106,11 @@ class _MyAppState extends State<MyApp> {
     NodeAction action, [
     dynamic argument,
   ]) async {
-    if (node.nodeId == null && node.text == null) return false;
-    return node.mapId != null
-        ? await FlutterAccessibilityService.performActionById(
-            node.mapId!,
-            action,
-            argument,
-          )
-        : false;
+    return await FlutterAccessibilityService.performAction(
+      node,
+      action,
+      argument,
+    );
   }
 
   void automateScroll(AccessibilityEvent node) async {
@@ -122,8 +120,8 @@ class _MyAppState extends State<MyApp> {
       final scrollableNode = findScrollableNode(node);
       log('$scrollableNode', name: 'SCROLLABLE- XX');
       if (scrollableNode != null) {
-        await FlutterAccessibilityService.performActionById(
-          node.mapId!,
+        await FlutterAccessibilityService.performAction(
+          node,
           NodeAction.actionScrollForward,
         );
       }
