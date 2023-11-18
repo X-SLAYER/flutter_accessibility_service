@@ -14,3 +14,10 @@
 ## 0.2.2
 
 - get the node childrens and sub childrens text
+
+## 0.2.3
+
+- Add support for android 14
+- Perform actions with Accessibility Service
+- Add Accessibility Overlay Support
+- Support automatation

@@ -59,7 +59,7 @@ class _MyAppState extends State<MyApp> {
       // automateScroll(event);
       // log("$event");
       // automateWikipedia(event);
-      // handleOverlay(event);
+      handleOverlay(event);
     });
   }
 
@@ -190,7 +190,7 @@ class _MyAppState extends State<MyApp> {
                     TextButton(
                       onPressed: () async {
                         await FlutterAccessibilityService.performGlobalAction(
-                          GlobalAction.globalActionHome,
+                          GlobalAction.globalActionTakeScreenshot,
                         );
                       },
                       child: const Text("Take ScreenShot"),
