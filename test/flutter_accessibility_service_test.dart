@@ -1,5 +1,3 @@
-// ignore_for_file: deprecated_member_use
-
 import 'package:flutter/services.dart';
 import 'package:flutter_accessibility_service/accessibility_event.dart';
 import 'package:flutter_accessibility_service/constants.dart';
@@ -14,7 +12,8 @@ void main() {
   final List<MethodCall> log = <MethodCall>[];
 
   setUp(() {
-    methodChannel.setMockMethodCallHandler((MethodCall methodCall) async {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(methodChannel, (MethodCall methodCall) async {
       log.add(methodCall);
       switch (methodCall.method) {
         case 'requestAccessibilityPermission':
