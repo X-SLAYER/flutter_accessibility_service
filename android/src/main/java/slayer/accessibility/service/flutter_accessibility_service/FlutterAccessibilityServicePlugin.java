@@ -1,5 +1,9 @@
 package slayer.accessibility.service.flutter_accessibility_service;
 
+import static slayer.accessibility.service.flutter_accessibility_service.Constants.*;
+
+import android.accessibilityservice.AccessibilityService;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
@@ -64,7 +68,7 @@ public class FlutterAccessibilityServicePlugin implements FlutterPlugin, Activit
         channel.setMethodCallHandler(null);
         eventChannel.setStreamHandler(null);
     }
-
+    @SuppressLint("WrongConstant")
     @Override
     public void onListen(Object arguments, EventChannel.EventSink events) {
         if (Utils.isAccessibilitySettingsOn(context)) {
@@ -73,7 +77,11 @@ public class FlutterAccessibilityServicePlugin implements FlutterPlugin, Activit
             intentFilter.addAction(AccessibilityListener.ACCESSIBILITY_INTENT);
 
             accessibilityReceiver = new AccessibilityReceiver(events);
-            context.registerReceiver(accessibilityReceiver, intentFilter);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                context.registerReceiver(accessibilityReceiver, intentFilter, Context.RECEIVER_EXPORTED);
+            }else{
+                context.registerReceiver(accessibilityReceiver, intentFilter);
+            }
 
             /// Set up listener intent
             Intent listenerIntent = new Intent(context, AccessibilityListener.class);
