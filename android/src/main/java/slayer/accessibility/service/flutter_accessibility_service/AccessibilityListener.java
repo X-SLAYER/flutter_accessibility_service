@@ -142,7 +142,7 @@ public class AccessibilityListener extends AccessibilityService {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
             String mapId = generateNodeId(node);
             if (traversedNodes.contains(mapId)) return;
-            traversedNodes.add(mapId)
+            traversedNodes.add(mapId);
             AccessibilityWindowInfo windowInfo = null;
             HashMap<String, Object> nested = new HashMap<>();
             Rect rect = new Rect();
