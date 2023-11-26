@@ -27,6 +27,7 @@ import com.google.gson.Gson;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.HashSet;
 import java.util.stream.Collectors;
 
 import io.flutter.embedding.android.FlutterTextureView;
@@ -56,6 +57,7 @@ public class AccessibilityListener extends AccessibilityService {
             List<String> nextTexts = new ArrayList<>();
             List<Integer> actions = new ArrayList<>();
             List<HashMap<String, Object>> subNodeActions = new ArrayList<>();
+            HashSet<AccessibilityNodeInfo> traversedNodes = new HashSet<>();
             HashMap<String, Object> data = new HashMap<>();
             if (parentNodeInfo == null) {
                 return;
@@ -88,7 +90,7 @@ public class AccessibilityListener extends AccessibilityService {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
                 data.put("nodeId", parentNodeInfo.getViewIdResourceName());
             }
-            getSubNodes(parentNodeInfo, subNodeActions);
+            getSubNodes(parentNodeInfo, subNodeActions, traversedNodes);
             data.put("nodesText", nextTexts);
             actions.addAll(parentNodeInfo.getActionList().stream().map(AccessibilityNodeInfo.AccessibilityAction::getId).collect(Collectors.toList()));
             data.put("parentActions", actions);
@@ -136,8 +138,10 @@ public class AccessibilityListener extends AccessibilityService {
 
     @RequiresApi(api = Build.VERSION_CODES.N)
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
-    void getSubNodes(AccessibilityNodeInfo node, List<HashMap<String, Object>> arr) {
+    void getSubNodes(AccessibilityNodeInfo node, List<HashMap<String, Object>> arr, HashSet<AccessibilityNodeInfo> traversedNodes) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
+            if (traversedNodes.contains(node)) return;
+            traversedNodes.add(node);
             String mapId = generateNodeId(node);
             AccessibilityWindowInfo windowInfo = null;
             HashMap<String, Object> nested = new HashMap<>();
@@ -166,7 +170,7 @@ public class AccessibilityListener extends AccessibilityService {
                 AccessibilityNodeInfo child = node.getChild(i);
                 if (child == null)
                     continue;
-                getSubNodes(child, arr);
+                getSubNodes(child, arr, traversedNodes);
             }
         }
     }
