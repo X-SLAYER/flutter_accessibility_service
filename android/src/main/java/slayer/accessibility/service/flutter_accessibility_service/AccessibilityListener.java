@@ -57,7 +57,7 @@ public class AccessibilityListener extends AccessibilityService {
             List<String> nextTexts = new ArrayList<>();
             List<Integer> actions = new ArrayList<>();
             List<HashMap<String, Object>> subNodeActions = new ArrayList<>();
-            Set<AccessibilityNodeInfo> traversedNodes = new HashSet<>();
+            HashSet<AccessibilityNodeInfo> traversedNodes = new HashSet<>();
             HashMap<String, Object> data = new HashMap<>();
             if (parentNodeInfo == null) {
                 return;
@@ -138,7 +138,7 @@ public class AccessibilityListener extends AccessibilityService {
 
     @RequiresApi(api = Build.VERSION_CODES.N)
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
-    void getSubNodes(AccessibilityNodeInfo node, List<HashMap<String, Object>> arr, Set<AccessibilityNodeInfo> traversedNodes) {
+    void getSubNodes(AccessibilityNodeInfo node, List<HashMap<String, Object>> arr, HashSet<AccessibilityNodeInfo> traversedNodes) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
             if (traversedNodes.contains(node)) return;
             traversedNodes.add(node);
