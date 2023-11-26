@@ -138,7 +138,7 @@ public class AccessibilityListener extends AccessibilityService {
 
     @RequiresApi(api = Build.VERSION_CODES.N)
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
-    void getSubNodes(AccessibilityNodeInfo node, List<HashMap<String, Object>> arr, List<AccessibilityNodeInfo> traversedNodes) {
+    void getSubNodes(AccessibilityNodeInfo node, List<HashMap<String, Object>> arr, Set<AccessibilityNodeInfo> traversedNodes) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
             if (traversedNodes.contains(node)) return;
             traversedNodes.add(node);
