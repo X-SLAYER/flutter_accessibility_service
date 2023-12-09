@@ -21,3 +21,7 @@
 - Perform actions with Accessibility Service
 - Add Accessibility Overlay Support
 - Support automatation
+
+## 0.2.4
+
+- Fix for StackOverflow in `getSubNodes` method
