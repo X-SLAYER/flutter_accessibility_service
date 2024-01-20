@@ -23,7 +23,7 @@ class AccessibilityEvent {
   String? packageName;
 
   /// the event type.
-  /// https://developer.android.com/reference/android/view/accessibility/AccessibilityEvent#getEventTime()
+  /// https://developer.android.com/reference/android/view/accessibility/AccessibilityEvent#getEventType()
   EventType? eventType;
 
   /// Gets the text of this node.
