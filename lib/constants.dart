@@ -235,11 +235,11 @@ enum GlobalAction {
   /// Action to bring up the Accessibility Button's chooser menu.
   globalActionAccessibilityButtonChooser(12),
 
-  ///Action to trigger the Accessibility Shortcut.
+  /// Action to trigger the Accessibility Shortcut.
   /// This shortcut has a hardware trigger and can be activated by holding down the two volume keys.
   globalActionAccessibilityShortcut(13),
 
-  /// ction to go back.
+  /// Action to go back.
   globalActionBack(1),
 
   /// Action to dismiss the notification shade.

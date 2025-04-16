@@ -40,7 +40,7 @@ class FlutterAccessibilityService {
     }
   }
 
-  /// check if accessibility permession is enebaled
+  /// check if accessibility permission is enabled
   static Future<bool> isAccessibilityPermissionEnabled() async {
     try {
       return await _methodChannel
@@ -78,7 +78,7 @@ class FlutterAccessibilityService {
 
   /// Show an overlay window of `TYPE_ACCESSIBILITY_OVERLAY`
   ///
-  /// Dont forget to add the overlay entrypoint in the main level.
+  /// Don't forget to add the overlay entrypoint in the main level.
   ///
   /// example:
   /// ```dart

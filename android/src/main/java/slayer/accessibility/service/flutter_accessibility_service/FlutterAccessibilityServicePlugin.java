@@ -53,6 +53,7 @@ public class FlutterAccessibilityServicePlugin implements FlutterPlugin, Activit
     private Context context;
     private Activity mActivity;
     private boolean supportOverlay = false;
+    private boolean isReceiverRegistered = false;
 
     private Result pendingResult;
     final int REQUEST_CODE_FOR_ACCESSIBILITY = 167;
@@ -87,6 +88,7 @@ public class FlutterAccessibilityServicePlugin implements FlutterPlugin, Activit
             if (Utils.isAccessibilitySettingsOn(context)) {
                 IntentFilter filter = new IntentFilter(BROD_SYSTEM_GLOBAL_ACTIONS);
                 context.registerReceiver(actionsReceiver, filter);
+                isReceiverRegistered = true;
                 Intent intent = new Intent(context, AccessibilityListener.class);
                 intent.putExtra(INTENT_SYSTEM_GLOBAL_ACTIONS, true);
                 context.startService(intent);
@@ -169,7 +171,10 @@ public class FlutterAccessibilityServicePlugin implements FlutterPlugin, Activit
     public void onDetachedFromEngine(@NonNull FlutterPluginBinding binding) {
         channel.setMethodCallHandler(null);
         eventChannel.setStreamHandler(null);
-        context.unregisterReceiver(actionsReceiver);
+        if (isReceiverRegistered) {
+            context.unregisterReceiver(actionsReceiver);
+            isReceiverRegistered = false;
+        }
     }
     @SuppressLint("WrongConstant")
     @Override

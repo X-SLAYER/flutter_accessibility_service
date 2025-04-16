@@ -44,7 +44,7 @@ class _MyAppState extends State<MyApp> {
     super.initState();
   }
 
-  void handleAccessiblityStream() {
+  void handleAccessibilityStream() {
     foundSearchField = false;
     setText = false;
     if (_subscription?.isPaused ?? false) {
@@ -177,7 +177,7 @@ class _MyAppState extends State<MyApp> {
                     ),
                     const SizedBox(height: 20.0),
                     TextButton(
-                      onPressed: handleAccessiblityStream,
+                      onPressed: handleAccessibilityStream,
                       child: const Text("Start Stream"),
                     ),
                     const SizedBox(height: 20.0),
