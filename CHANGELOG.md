@@ -1,3 +1,7 @@
+## 0.2.6
+
+Fix `IllegalArgumentException` on detach
+
 ## 0.2.5
 
 - Add namespace to the android build.gradle
