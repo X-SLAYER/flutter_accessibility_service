@@ -28,6 +28,16 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.HashSet;
+import java.util.Objects;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 import io.flutter.embedding.android.FlutterTextureView;
@@ -36,13 +46,17 @@ import io.flutter.embedding.engine.FlutterEngineCache;
 
 
 public class AccessibilityListener extends AccessibilityService {
+    private static final String TAG = "AccessibilityListener";
     private static WindowManager mWindowManager;
     private static FlutterView mOverlayView;
     static private boolean isOverlayShown = false;
-    private static final int CACHE_SIZE = 1000;
-    private static LruCache<String, AccessibilityNodeInfo> nodeMap =
+    private static final int CACHE_SIZE = 4 * 1024 * 1024; // 4MiB
+    private static final LruCache<String, AccessibilityNodeInfo> nodeMap =
             new LruCache<>(CACHE_SIZE);
 
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
+
+    private static final int EVENT_PROCESSING_TIMEOUT_SECONDS = 2;
     public static AccessibilityNodeInfo getNodeInfo(String id) {
         return nodeMap.get(id);
     }
@@ -50,71 +64,42 @@ public class AccessibilityListener extends AccessibilityService {
     @RequiresApi(api = Build.VERSION_CODES.N)
     @Override
     public void onAccessibilityEvent(AccessibilityEvent accessibilityEvent) {
-        try {
-            final int eventType = accessibilityEvent.getEventType();
-            AccessibilityNodeInfo parentNodeInfo = accessibilityEvent.getSource();
-            AccessibilityWindowInfo windowInfo = null;
-            List<String> nextTexts = new ArrayList<>();
-            List<Integer> actions = new ArrayList<>();
-            List<HashMap<String, Object>> subNodeActions = new ArrayList<>();
-            HashSet<AccessibilityNodeInfo> traversedNodes = new HashSet<>();
-            HashMap<String, Object> data = new HashMap<>();
-            if (parentNodeInfo == null) {
-                return;
-            }
-            String nodeId = generateNodeId(parentNodeInfo);
-            String packageName = parentNodeInfo.getPackageName().toString();
-            storeNode(nodeId, parentNodeInfo);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                windowInfo = parentNodeInfo.getWindow();
-            }
-
-
-            Intent intent = new Intent(ACCESSIBILITY_INTENT);
-
-            data.put("mapId", nodeId);
-            data.put("packageName", packageName);
-            data.put("eventType", eventType);
-            data.put("actionType", accessibilityEvent.getAction());
-            data.put("eventTime", accessibilityEvent.getEventTime());
-            data.put("movementGranularity", accessibilityEvent.getMovementGranularity());
-            Rect rect = new Rect();
-            parentNodeInfo.getBoundsInScreen(rect);
-            data.put("screenBounds", getBoundingPoints(rect));
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-                data.put("contentChangeTypes", accessibilityEvent.getContentChangeTypes());
-            }
-            if (parentNodeInfo.getText() != null) {
-                data.put("capturedText", parentNodeInfo.getText().toString());
-            }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
-                data.put("nodeId", parentNodeInfo.getViewIdResourceName());
-            }
-            getSubNodes(parentNodeInfo, subNodeActions, traversedNodes);
-            data.put("nodesText", nextTexts);
-            actions.addAll(parentNodeInfo.getActionList().stream().map(AccessibilityNodeInfo.AccessibilityAction::getId).collect(Collectors.toList()));
-            data.put("parentActions", actions);
-            data.put("subNodesActions", subNodeActions);
-            data.put("isClickable", parentNodeInfo.isClickable());
-            data.put("isScrollable", parentNodeInfo.isScrollable());
-            data.put("isFocusable", parentNodeInfo.isFocusable());
-            data.put("isCheckable", parentNodeInfo.isCheckable());
-            data.put("isLongClickable", parentNodeInfo.isLongClickable());
-            data.put("isEditable", parentNodeInfo.isEditable());
-            if (windowInfo != null) {
-                data.put("isActive", windowInfo.isActive());
-                data.put("isFocused", windowInfo.isFocused());
-                data.put("windowType", windowInfo.getType());
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    data.put("isPip", windowInfo.isInPictureInPictureMode());
-                }
-            }
-            storeToSharedPrefs(data);
-            intent.putExtra(SEND_BROADCAST, true);
-            sendBroadcast(intent);
-        } catch (Exception ex) {
-            Log.e("EVENT", "onAccessibilityEvent: " + ex.getMessage());
+        final AccessibilityNodeInfo parentNodeInfo = accessibilityEvent.getSource();
+        if (parentNodeInfo == null) {
+            return;
         }
+
+        final AccessibilityEvent eventCopy = AccessibilityEvent.obtain(accessibilityEvent);
+        final int eventType = eventCopy.getEventType();
+
+        Callable<Void> task = () -> {
+            try {
+                processAccessibilityEvent(eventCopy, parentNodeInfo);
+                return null;
+            } catch (Exception ex) {
+                Log.e(TAG, "Error processing accessibility event: " + ex.getMessage(), ex);
+                return null;
+            } finally {
+                eventCopy.recycle(); // Clean up the copied event
+            }
+        };
+
+        Future<Void> future = executor.submit(task);
+        try {
+            // Wait up to configured seconds for processing to complete
+            future.get(EVENT_PROCESSING_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        } catch (TimeoutException e) {
+            future.cancel(true);
+            Log.w(TAG, "Event processing timed out for event type: " + eventType);
+            // Notify that event processing was canceled
+            Intent timeoutIntent = new Intent(ACCESSIBILITY_INTENT);
+            timeoutIntent.putExtra("event_timeout", true);
+            timeoutIntent.putExtra("event_type", eventType);
+            sendBroadcast(timeoutIntent);
+        } catch (Exception e) {
+            Log.e(TAG, "Exception while waiting for event processing: " + e.getMessage(), e);
+        }
+
     }
 
     @Override
@@ -135,10 +120,86 @@ public class AccessibilityListener extends AccessibilityService {
         return START_STICKY;
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.N)
+    private void processAccessibilityEvent(AccessibilityEvent accessibilityEvent, AccessibilityNodeInfo parentNodeInfo) {
+        try {
+            final int eventType = accessibilityEvent.getEventType();
+            AccessibilityWindowInfo windowInfo = null;
+            List<String> nextTexts = new ArrayList<>();
+            List<Integer> actions = new ArrayList<>();
+            List<HashMap<String, Object>> subNodeActions = new ArrayList<>();
+            HashSet<AccessibilityNodeInfo> traversedNodes = new HashSet<>();
+            HashMap<String, Object> data = new HashMap<>();
+
+            String nodeId = generateNodeId(parentNodeInfo);
+            String packageName = parentNodeInfo.getPackageName().toString();
+            storeNode(nodeId, parentNodeInfo);
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                windowInfo = parentNodeInfo.getWindow();
+            }
+
+            Intent intent = new Intent(ACCESSIBILITY_INTENT);
+
+            data.put("mapId", nodeId);
+            data.put("packageName", packageName);
+            data.put("eventType", eventType);
+            data.put("actionType", accessibilityEvent.getAction());
+            data.put("eventTime", accessibilityEvent.getEventTime());
+            data.put("movementGranularity", accessibilityEvent.getMovementGranularity());
+
+            Rect rect = new Rect();
+            parentNodeInfo.getBoundsInScreen(rect);
+            data.put("screenBounds", getBoundingPoints(rect));
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                data.put("contentChangeTypes", accessibilityEvent.getContentChangeTypes());
+            }
+
+            if (parentNodeInfo.getText() != null) {
+                data.put("capturedText", parentNodeInfo.getText().toString());
+            }
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
+                data.put("nodeId", parentNodeInfo.getViewIdResourceName());
+            }
+
+            getSubNodes(parentNodeInfo, subNodeActions, traversedNodes,10);
+            data.put("nodesText", nextTexts);
+            actions.addAll(parentNodeInfo.getActionList().stream()
+                    .map(AccessibilityNodeInfo.AccessibilityAction::getId)
+                    .collect(Collectors.toList()));
+
+            data.put("parentActions", actions);
+            data.put("subNodesActions", subNodeActions);
+            data.put("isClickable", parentNodeInfo.isClickable());
+            data.put("isScrollable", parentNodeInfo.isScrollable());
+            data.put("isFocusable", parentNodeInfo.isFocusable());
+            data.put("isCheckable", parentNodeInfo.isCheckable());
+            data.put("isLongClickable", parentNodeInfo.isLongClickable());
+            data.put("isEditable", parentNodeInfo.isEditable());
+
+            if (windowInfo != null) {
+                data.put("isActive", windowInfo.isActive());
+                data.put("isFocused", windowInfo.isFocused());
+                data.put("windowType", windowInfo.getType());
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    data.put("isPip", windowInfo.isInPictureInPictureMode());
+                }
+            }
+
+            storeToSharedPrefs(data);
+            intent.putExtra(SEND_BROADCAST, true);
+            sendBroadcast(intent);
+        } catch (Exception ex) {
+            Log.e(TAG, "Error in processAccessibilityEvent: " + ex.getMessage(), ex);
+        }
+    }
 
     @RequiresApi(api = Build.VERSION_CODES.N)
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
-    void getSubNodes(AccessibilityNodeInfo node, List<HashMap<String, Object>> arr, HashSet<AccessibilityNodeInfo> traversedNodes) {
+    void getSubNodes(AccessibilityNodeInfo node, List<HashMap<String, Object>> arr, HashSet<AccessibilityNodeInfo> traversedNodes,int currentDepth) {
+        if (currentDepth > 10) return;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
             if (traversedNodes.contains(node)) return;
             traversedNodes.add(node);
@@ -150,15 +211,21 @@ public class AccessibilityListener extends AccessibilityService {
             windowInfo = node.getWindow();
             nested.put("mapId", mapId);
             nested.put("nodeId", node.getViewIdResourceName());
-            nested.put("capturedText", node.getText());
+            if (node.getText() != null) {
+                nested.put("capturedText", node.getText());
+            }
             nested.put("screenBounds", getBoundingPoints(rect));
-            nested.put("isClickable", node.isClickable());
-            nested.put("isScrollable", node.isScrollable());
+            if (node.isClickable() || node.isScrollable() || node.isEditable()) {
+                nested.put("isClickable", node.isClickable());
+                nested.put("isScrollable", node.isScrollable());
+                nested.put("isEditable", node.isEditable());
+            }
             nested.put("isFocusable", node.isFocusable());
             nested.put("isCheckable", node.isCheckable());
             nested.put("isLongClickable", node.isLongClickable());
-            nested.put("isEditable", node.isEditable());
-            nested.put("parentActions", node.getActionList().stream().map(AccessibilityNodeInfo.AccessibilityAction::getId).collect(Collectors.toList()));
+            nested.put("parentActions", node.getActionList().stream()
+                    .map(AccessibilityNodeInfo.AccessibilityAction::getId)
+                    .collect(Collectors.toList()));
             if (windowInfo != null) {
                 nested.put("isActive", node.getWindow().isActive());
                 nested.put("isFocused", node.getWindow().isFocused());
@@ -170,7 +237,7 @@ public class AccessibilityListener extends AccessibilityService {
                 AccessibilityNodeInfo child = node.getChild(i);
                 if (child == null)
                     continue;
-                getSubNodes(child, arr, traversedNodes);
+                getSubNodes(child, arr, traversedNodes,currentDepth+1);
             }
         }
     }
@@ -192,7 +259,7 @@ public class AccessibilityListener extends AccessibilityService {
     protected void onServiceConnected() {
         mWindowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
         mOverlayView = new FlutterView(getApplicationContext(), new FlutterTextureView(getApplicationContext()));
-        mOverlayView.attachToFlutterEngine(FlutterEngineCache.getInstance().get(CACHED_TAG));
+        mOverlayView.attachToFlutterEngine(Objects.requireNonNull(FlutterEngineCache.getInstance().get(CACHED_TAG)));
         mOverlayView.setFitsSystemWindows(true);
         mOverlayView.setFocusable(true);
         mOverlayView.setFocusableInTouchMode(true);
@@ -201,17 +268,22 @@ public class AccessibilityListener extends AccessibilityService {
 
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP_MR1)
     static public void showOverlay() {
-        if (!isOverlayShown) {
-            WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
-            lp.type = WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY;
-            lp.format = PixelFormat.TRANSLUCENT;
-            lp.flags |= WindowManager.LayoutParams.FLAG_FULLSCREEN;
-            lp.width = WindowManager.LayoutParams.MATCH_PARENT;
-            lp.height = WindowManager.LayoutParams.MATCH_PARENT;
-            lp.gravity = Gravity.TOP;
-            mWindowManager.addView(mOverlayView, lp);
-            isOverlayShown = true;
-        }
+      try
+      {
+          if (!isOverlayShown) {
+              WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
+              lp.type = WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY;
+              lp.format = PixelFormat.TRANSLUCENT;
+              lp.flags |= WindowManager.LayoutParams.FLAG_FULLSCREEN;
+              lp.width = WindowManager.LayoutParams.MATCH_PARENT;
+              lp.height = WindowManager.LayoutParams.MATCH_PARENT;
+              lp.gravity = Gravity.TOP;
+              mWindowManager.addView(mOverlayView, lp);
+              isOverlayShown = true;
+          }
+      } catch (Exception e) {
+          Log.e(TAG, "Error showing overlay", e);
+      }
     }
 
     static public void removeOverlay() {
@@ -225,9 +297,17 @@ public class AccessibilityListener extends AccessibilityService {
     public void onDestroy() {
         super.onDestroy();
         removeOverlay();
+        executor.shutdown();
+        try {
+            if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
+                executor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            executor.shutdownNow();
+        }
         SharedPreferences sharedPreferences = getSharedPreferences(SHARED_PREFS_TAG, MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPreferences.edit();
-        editor.remove(ACCESSIBILITY_NODE).commit();
+        editor.remove(ACCESSIBILITY_NODE).apply();
     }
 
     @Override

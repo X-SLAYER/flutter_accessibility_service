@@ -75,6 +75,7 @@ public class FlutterAccessibilityServicePlugin implements FlutterPlugin, Activit
         }
     };
 
+    @SuppressLint("UnspecifiedRegisterReceiverFlag")
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     @Override
     public void onMethodCall(@NonNull MethodCall call, @NonNull Result result) {
@@ -87,7 +88,11 @@ public class FlutterAccessibilityServicePlugin implements FlutterPlugin, Activit
         } else if (call.method.equals("getSystemActions")) {
             if (Utils.isAccessibilitySettingsOn(context)) {
                 IntentFilter filter = new IntentFilter(BROD_SYSTEM_GLOBAL_ACTIONS);
-                context.registerReceiver(actionsReceiver, filter);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    context.registerReceiver(actionsReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+                } else {
+                    context.registerReceiver(actionsReceiver, filter);
+                }
                 isReceiverRegistered = true;
                 Intent intent = new Intent(context, AccessibilityListener.class);
                 intent.putExtra(INTENT_SYSTEM_GLOBAL_ACTIONS, true);
@@ -122,33 +127,7 @@ public class FlutterAccessibilityServicePlugin implements FlutterPlugin, Activit
             } else {
                 result.success(false);
             }
-        }
-     /*   else if (call.method.equals("performActionByText")) {
-            String text = call.argument("text");
-            Integer action = (Integer) call.argument("nodeAction");
-            Object extras = call.argument("extras");
-            Bundle arguments = Utils.bundleIdentifier(action, extras);
-            AccessibilityNodeInfo nodeInfo = AccessibilityListener.getNodeInfo();
-            if (nodeInfo != null) {
-                AccessibilityNodeInfo nodeToClick = null;
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
-                    nodeToClick = Utils.findNodeByText(nodeInfo, text);
-                }
-                if (nodeToClick != null) {
-                    if (arguments == null) {
-                        nodeToClick.performAction(action);
-                    } else {
-                        nodeToClick.performAction(action, arguments);
-                    }
-                    result.success(true);
-                } else {
-                    result.success(false);
-                }
-            } else {
-                result.success(false);
-            }
-        } */
-        else if (call.method.equals("showOverlayWindow")) {
+        } else if (call.method.equals("showOverlayWindow")) {
             if (!supportOverlay) {
                 result.error("ERR:OVERLAY", "Add the overlay entry point to be able of using it", null);
                 return;
@@ -156,12 +135,27 @@ public class FlutterAccessibilityServicePlugin implements FlutterPlugin, Activit
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
                 AccessibilityListener.showOverlay();
                 result.success(true);
+
             } else {
                 result.success(false);
             }
         } else if (call.method.equals("hideOverlayWindow")) {
             AccessibilityListener.removeOverlay();
             result.success(true);
+        } else if (call.method.equals("stopStream")) {
+            Intent stopIntent = new Intent(context, AccessibilityListener.class);
+            stopIntent.putExtra(INTENT_TOGGLE_STREAM, false);
+            context.stopService(stopIntent);
+            result.success(true);
+        } else if (call.method.equals("openStream")) {
+            if (Utils.isAccessibilitySettingsOn(context)) {
+                Intent intent = new Intent(context, AccessibilityListener.class);
+                intent.putExtra(INTENT_TOGGLE_STREAM, true);
+                context.startService(intent);
+                result.success(true);
+            } else {
+                result.success(false);
+            }
         } else {
             result.notImplemented();
         }
@@ -176,7 +170,8 @@ public class FlutterAccessibilityServicePlugin implements FlutterPlugin, Activit
             isReceiverRegistered = false;
         }
     }
-    @SuppressLint("WrongConstant")
+
+    @SuppressLint({"WrongConstant", "UnspecifiedRegisterReceiverFlag"})
     @Override
     public void onListen(Object arguments, EventChannel.EventSink events) {
         if (Utils.isAccessibilitySettingsOn(context)) {
@@ -185,11 +180,12 @@ public class FlutterAccessibilityServicePlugin implements FlutterPlugin, Activit
             intentFilter.addAction(ACCESSIBILITY_INTENT);
 
             accessibilityReceiver = new AccessibilityReceiver(events);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                context.registerReceiver(accessibilityReceiver, intentFilter, Context.RECEIVER_EXPORTED);
-            }else{
-                context.registerReceiver(accessibilityReceiver, intentFilter);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                context.registerReceiver(actionsReceiver, intentFilter, Context.RECEIVER_NOT_EXPORTED);
+            } else {
+                context.registerReceiver(actionsReceiver, intentFilter);
             }
+
 
             /// Set up listener intent
             Intent listenerIntent = new Intent(context, AccessibilityListener.class);
@@ -200,8 +196,12 @@ public class FlutterAccessibilityServicePlugin implements FlutterPlugin, Activit
 
     @Override
     public void onCancel(Object arguments) {
-        context.unregisterReceiver(accessibilityReceiver);
-        accessibilityReceiver = null;
+        if (accessibilityReceiver != null) {
+            context.unregisterReceiver(accessibilityReceiver);
+            accessibilityReceiver = null;
+        }
+        Intent stopIntent = new Intent(context, AccessibilityListener.class);
+        context.stopService(stopIntent);
     }
 
     @Override

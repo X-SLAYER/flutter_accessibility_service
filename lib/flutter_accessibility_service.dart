@@ -21,7 +21,9 @@ class FlutterAccessibilityService {
     if (Platform.isAndroid) {
       _stream ??=
           _eventChannel.receiveBroadcastStream().map<AccessibilityEvent>(
-                (event) => AccessibilityEvent.fromMap(jsonDecode(event)),
+                (event) => AccessibilityEvent.fromMap(
+                  jsonDecode(event),
+                ),
               );
       return _stream!;
     }
@@ -148,6 +150,21 @@ class FlutterAccessibilityService {
             {"action": action.id},
           ) ??
           false;
+    } on PlatformException catch (error) {
+      log("$error");
+      return false;
+    }
+  }
+
+  /// Stops the accessibility broadcast receiver.
+  ///
+  /// This method attempts to stop the accessibility broadcast receiver
+  /// and remove the overlay window if it is currently displayed.
+  /// This method is useful for cleaning up resources and stopping the broadcast receiver
+
+  static Future<bool> stopStream() async {
+    try {
+      return await _methodChannel.invokeMethod<bool?>('stopStream') ?? false;
     } on PlatformException catch (error) {
       log("$error");
       return false;

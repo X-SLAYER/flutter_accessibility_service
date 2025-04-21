@@ -9,4 +9,6 @@ public class Constants {
     public static final String SEND_BROADCAST = "SEND_BROADCAST";
     public static final String ACCESSIBILITY_NODE = "ACCESSIBILITY_NODE";
     public static final String SHARED_PREFS_TAG = "SHARED_PREFS_TAG";
+    public static final String INTENT_TOGGLE_STREAM = "INTENT_TOGGLE_STREAM";
+
 }

@@ -44,7 +44,7 @@ class _MyAppState extends State<MyApp> {
     super.initState();
   }
 
-  void handleAccessibilityStream() {
+  void handleAccessibilityStream() async {
     foundSearchField = false;
     setText = false;
     if (_subscription?.isPaused ?? false) {
@@ -158,11 +158,13 @@ class _MyAppState extends State<MyApp> {
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
+                  spacing: 10.0,
                   children: [
                     TextButton(
                       onPressed: () async {
-                        await FlutterAccessibilityService
+                        final result = await FlutterAccessibilityService
                             .requestAccessibilityPermission();
+                        log("Permission result: $result");
                       },
                       child: const Text("Request Permission"),
                     ),
@@ -180,10 +182,12 @@ class _MyAppState extends State<MyApp> {
                       onPressed: handleAccessibilityStream,
                       child: const Text("Start Stream"),
                     ),
-                    const SizedBox(height: 20.0),
                     TextButton(
-                      onPressed: () {
+                      onPressed: () async {
                         _subscription?.cancel();
+                        final result =
+                            await FlutterAccessibilityService.stopStream();
+                        log("Stop Stream result: $result");
                       },
                       child: const Text("Stop Stream"),
                     ),
@@ -202,6 +206,14 @@ class _MyAppState extends State<MyApp> {
                         log('$list');
                       },
                       child: const Text("List GlobalActions"),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          events.clear();
+                        });
+                      },
+                      child: const Text("Clear List"),
                     ),
                   ],
                 ),
