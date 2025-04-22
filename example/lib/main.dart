@@ -67,7 +67,10 @@ class _MyAppState extends State<MyApp> {
     if (event.packageName!.contains('youtube')) {
       log('$event');
     }
-    if (event.packageName!.contains('youtube') && event.isFocused!) {
+    if (event.packageName!.contains('youtube') ||
+        ((event.nodeId != null &&
+                event.nodeId!.contains('com.google.android.youtube'))) &&
+            event.isFocused!) {
       eventDateTime = event.eventTime!;
       await FlutterAccessibilityService.showOverlayWindow();
     } else if (eventDateTime.difference(event.eventTime!).inSeconds.abs() > 2 ||
@@ -202,6 +205,14 @@ class _MyAppState extends State<MyApp> {
                         log('$list');
                       },
                       child: const Text("List GlobalActions"),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          events.clear();
+                        });
+                      },
+                      child: const Text("Clear List"),
                     ),
                   ],
                 ),
