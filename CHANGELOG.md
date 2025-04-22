@@ -1,3 +1,7 @@
+## 0.3.0
+
+Fix `BroadcastReceiver` registration issue
+
 ## 0.2.6
 
 Fix `IllegalArgumentException` on detach
