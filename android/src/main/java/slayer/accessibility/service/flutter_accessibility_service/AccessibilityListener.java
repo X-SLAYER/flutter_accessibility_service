@@ -209,15 +209,20 @@ public class AccessibilityListener extends AccessibilityService {
     }
 
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP_MR1)
-    static public void showOverlay() {
+    static public void showOverlay(int width, int height, int gravity, boolean clickableThrough) {
         if (!isOverlayShown) {
             WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
             lp.type = WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY;
             lp.format = PixelFormat.TRANSLUCENT;
-            lp.flags |= WindowManager.LayoutParams.FLAG_FULLSCREEN;
-            lp.width = WindowManager.LayoutParams.MATCH_PARENT;
-            lp.height = WindowManager.LayoutParams.MATCH_PARENT;
-            lp.gravity = Gravity.TOP;
+            lp.width = width;
+            lp.height = height;
+            if (!clickableThrough) {
+                lp.flags |= WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
+            } else {
+                lp.flags |= WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
+                        WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN;
+            }
+            lp.gravity = gravity;
             mWindowManager.addView(mOverlayView, lp);
             isOverlayShown = true;
         }

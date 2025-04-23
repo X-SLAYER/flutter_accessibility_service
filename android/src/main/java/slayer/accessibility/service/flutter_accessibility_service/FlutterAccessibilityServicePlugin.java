@@ -92,7 +92,8 @@ public class FlutterAccessibilityServicePlugin implements FlutterPlugin, Activit
                     context.registerReceiver(actionsReceiver, filter, Context.RECEIVER_EXPORTED);
                 } else {
                     context.registerReceiver(actionsReceiver, filter);
-                }              isReceiverRegistered = true;
+                }
+                isReceiverRegistered = true;
                 Intent intent = new Intent(context, AccessibilityListener.class);
                 intent.putExtra(INTENT_SYSTEM_GLOBAL_ACTIONS, true);
                 context.startService(intent);
@@ -126,14 +127,17 @@ public class FlutterAccessibilityServicePlugin implements FlutterPlugin, Activit
             } else {
                 result.success(false);
             }
-        }
-        else if (call.method.equals("showOverlayWindow")) {
+        } else if (call.method.equals("showOverlayWindow")) {
             if (!supportOverlay) {
                 result.error("ERR:OVERLAY", "Add the overlay entry point to be able of using it", null);
                 return;
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
-                AccessibilityListener.showOverlay();
+                Boolean clickableThrough = call.argument("clickableThrough");
+                Integer width = call.argument("width");
+                Integer height = call.argument("height");
+                Integer gravity = call.argument("gravity");
+                AccessibilityListener.showOverlay(width, height, gravity, clickableThrough);
                 result.success(true);
             } else {
                 result.success(false);

@@ -7,6 +7,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_accessibility_service/accessibility_event.dart';
 import 'package:flutter_accessibility_service/constants.dart';
 
+import 'config/overlay_config.dart';
+
 class FlutterAccessibilityService {
   FlutterAccessibilityService._();
 
@@ -92,9 +94,14 @@ class FlutterAccessibilityService {
   ///   );
   /// }
   /// ```
-  static Future<bool> showOverlayWindow() async {
+  static Future<bool> showOverlayWindow([
+    OverlayConfig config = const OverlayConfig(),
+  ]) async {
     try {
-      return await _methodChannel.invokeMethod<bool?>('showOverlayWindow') ??
+      return await _methodChannel.invokeMethod<bool?>(
+            'showOverlayWindow',
+            config.toJson(),
+          ) ??
           false;
     } on PlatformException catch (error) {
       log("$error");
