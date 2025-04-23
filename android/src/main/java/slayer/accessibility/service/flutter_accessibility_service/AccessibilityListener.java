@@ -39,9 +39,12 @@ public class AccessibilityListener extends AccessibilityService {
     private static WindowManager mWindowManager;
     private static FlutterView mOverlayView;
     static private boolean isOverlayShown = false;
-    private static final int CACHE_SIZE = 1000;
+    private static final int CACHE_SIZE = 4 * 1024 * 1024; // 4Mib
+    private static final int maxDepth = 20;
     private static LruCache<String, AccessibilityNodeInfo> nodeMap =
             new LruCache<>(CACHE_SIZE);
+    private static final int DEFAULT_MAX_TREE_DEPTH = 15;
+    private int maximumTreeDepth = DEFAULT_MAX_TREE_DEPTH;
 
     public static AccessibilityNodeInfo getNodeInfo(String id) {
         return nodeMap.get(id);
@@ -90,7 +93,7 @@ public class AccessibilityListener extends AccessibilityService {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
                 data.put("nodeId", parentNodeInfo.getViewIdResourceName());
             }
-            getSubNodes(parentNodeInfo, subNodeActions, traversedNodes);
+            getSubNodes(parentNodeInfo, subNodeActions, traversedNodes, 0);
             data.put("nodesText", nextTexts);
             actions.addAll(parentNodeInfo.getActionList().stream().map(AccessibilityNodeInfo.AccessibilityAction::getId).collect(Collectors.toList()));
             data.put("parentActions", actions);
@@ -138,7 +141,13 @@ public class AccessibilityListener extends AccessibilityService {
 
     @RequiresApi(api = Build.VERSION_CODES.N)
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
-    void getSubNodes(AccessibilityNodeInfo node, List<HashMap<String, Object>> arr, HashSet<AccessibilityNodeInfo> traversedNodes) {
+    void getSubNodes(AccessibilityNodeInfo node, List<HashMap<String, Object>> arr, HashSet<AccessibilityNodeInfo> traversedNodes, int currentDepth) {
+        if (currentDepth >= maximumTreeDepth || node == null) {
+            if (currentDepth >= maximumTreeDepth) {
+                Log.d("TREE_DEPTH", "Maximum tree depth reached: " + currentDepth);
+            }
+            return;
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
             if (traversedNodes.contains(node)) return;
             traversedNodes.add(node);
@@ -170,7 +179,7 @@ public class AccessibilityListener extends AccessibilityService {
                 AccessibilityNodeInfo child = node.getChild(i);
                 if (child == null)
                     continue;
-                getSubNodes(child, arr, traversedNodes);
+                getSubNodes(child, arr, traversedNodes, currentDepth + 1);
             }
         }
     }
@@ -200,15 +209,20 @@ public class AccessibilityListener extends AccessibilityService {
     }
 
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP_MR1)
-    static public void showOverlay() {
+    static public void showOverlay(int width, int height, int gravity, boolean clickableThrough) {
         if (!isOverlayShown) {
             WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
             lp.type = WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY;
             lp.format = PixelFormat.TRANSLUCENT;
-            lp.flags |= WindowManager.LayoutParams.FLAG_FULLSCREEN;
-            lp.width = WindowManager.LayoutParams.MATCH_PARENT;
-            lp.height = WindowManager.LayoutParams.MATCH_PARENT;
-            lp.gravity = Gravity.TOP;
+            lp.width = width;
+            lp.height = height;
+            if (!clickableThrough) {
+                lp.flags |= WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
+            } else {
+                lp.flags |= WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
+                        WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN;
+            }
+            lp.gravity = gravity;
             mWindowManager.addView(mOverlayView, lp);
             isOverlayShown = true;
         }
@@ -227,7 +241,7 @@ public class AccessibilityListener extends AccessibilityService {
         removeOverlay();
         SharedPreferences sharedPreferences = getSharedPreferences(SHARED_PREFS_TAG, MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPreferences.edit();
-        editor.remove(ACCESSIBILITY_NODE).commit();
+        editor.remove(ACCESSIBILITY_NODE).apply();
     }
 
     @Override

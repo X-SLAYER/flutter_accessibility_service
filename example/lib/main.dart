@@ -3,6 +3,8 @@ import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_accessibility_service/accessibility_event.dart';
+import 'package:flutter_accessibility_service/config/overlay_config.dart';
+import 'package:flutter_accessibility_service/config/overlay_gravity.dart';
 import 'package:flutter_accessibility_service/constants.dart';
 import 'package:flutter_accessibility_service/flutter_accessibility_service.dart';
 
@@ -67,9 +69,19 @@ class _MyAppState extends State<MyApp> {
     if (event.packageName!.contains('youtube')) {
       log('$event');
     }
-    if (event.packageName!.contains('youtube') && event.isFocused!) {
+    if (event.packageName!.contains('youtube') ||
+        ((event.nodeId != null &&
+                event.nodeId!.contains('com.google.android.youtube'))) &&
+            event.isFocused!) {
       eventDateTime = event.eventTime!;
-      await FlutterAccessibilityService.showOverlayWindow();
+      await FlutterAccessibilityService.showOverlayWindow(
+        const OverlayConfig().copyWith(
+          height: 800,
+          width: 800,
+          gravity: OverlayGravity.bottomRight,
+          clickableThrough: false,
+        ),
+      );
     } else if (eventDateTime.difference(event.eventTime!).inSeconds.abs() > 2 ||
         (event.eventType == EventType.typeWindowStateChanged &&
             !event.isFocused!)) {
@@ -202,6 +214,14 @@ class _MyAppState extends State<MyApp> {
                         log('$list');
                       },
                       child: const Text("List GlobalActions"),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          events.clear();
+                        });
+                      },
+                      child: const Text("Clear List"),
                     ),
                   ],
                 ),
