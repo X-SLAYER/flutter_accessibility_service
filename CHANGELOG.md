@@ -1,3 +1,9 @@
+## 1.0.0
+
+- Improve nodes fetching
+- Add configuration model for the overlay window
+
+
 ## 0.3.0
 
 Fix `BroadcastReceiver` registration issue
