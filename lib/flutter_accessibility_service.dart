@@ -124,10 +124,10 @@ class FlutterAccessibilityService {
   /// System actions that correspond to the `GlobalAction`
   static Future<List<GlobalAction>> getSystemActions() async {
     try {
-      final _list = await _methodChannel
+      final list = await _methodChannel
               .invokeMethod<List<dynamic>>('getSystemActions') ??
           [];
-      return _list
+      return list
           .map(
             (e) => GlobalAction.values.firstWhere(
               (element) => element.id == e,

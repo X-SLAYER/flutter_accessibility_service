@@ -153,6 +153,11 @@ public class FlutterAccessibilityServicePlugin implements FlutterPlugin, Activit
     @Override
     public void onDetachedFromEngine(@NonNull FlutterPluginBinding binding) {
         channel.setMethodCallHandler(null);
+        // Null the sink first so any in-flight broadcast is dropped cleanly,
+        // then remove the stream handler (which may trigger onCancel).
+        if (accessibilityReceiver != null) {
+            accessibilityReceiver.setEventSink(null);
+        }
         eventChannel.setStreamHandler(null);
         if (isReceiverRegistered) {
             context.unregisterReceiver(actionsReceiver);
@@ -184,8 +189,11 @@ public class FlutterAccessibilityServicePlugin implements FlutterPlugin, Activit
 
     @Override
     public void onCancel(Object arguments) {
-        context.unregisterReceiver(accessibilityReceiver);
-        accessibilityReceiver = null;
+        if (accessibilityReceiver != null) {
+            accessibilityReceiver.setEventSink(null);
+            context.unregisterReceiver(accessibilityReceiver);
+            accessibilityReceiver = null;
+        }
     }
 
     @Override
