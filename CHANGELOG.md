@@ -1,16 +1,21 @@
-## 1.0.0
+# 1.1.0
+
+- Improve event sink stability
+- Improve result and receiver handling
+- Add accessibility status stream
+
+# 1.0.0
 
 - Improve nodes fetching
 - Add configuration model for the overlay window
 
-
 ## 0.3.0
 
-Fix `BroadcastReceiver` registration issue
+- Fix `BroadcastReceiver` registration issue
 
 ## 0.2.6
 
-Fix `IllegalArgumentException` on detach
+- Fix `IllegalArgumentException` on detach
 
 ## 0.2.5
 
