@@ -8,6 +8,7 @@ import 'package:flutter_accessibility_service/accessibility_event.dart';
 import 'package:flutter_accessibility_service/constants.dart';
 
 import 'config/overlay_config.dart';
+import 'gesture_description.dart';
 
 class FlutterAccessibilityService {
   FlutterAccessibilityService._();
@@ -153,6 +154,54 @@ class FlutterAccessibilityService {
     } on PlatformException catch (error) {
       log("$error");
       return [];
+    }
+  }
+
+  /// Dispatches a gesture on the screen via the accessibility service.
+  ///
+  /// Requires Android 7.0 (API 24) or higher. Returns `true` when the gesture
+  /// completes successfully, or `false` if it was cancelled or the service is
+  /// not running.
+  ///
+  /// Example — tap at (500, 1000):
+  /// ```dart
+  /// await FlutterAccessibilityService.dispatchGesture(
+  ///   GestureDescription(
+  ///     strokes: [
+  ///       GestureStroke(
+  ///         path: [GesturePoint(500, 1000)],
+  ///         startTime: 0,
+  ///         duration: 100,
+  ///       ),
+  ///     ],
+  ///   ),
+  /// );
+  /// ```
+  ///
+  /// Example — swipe up from (500, 1500) to (500, 300):
+  /// ```dart
+  /// await FlutterAccessibilityService.dispatchGesture(
+  ///   GestureDescription(
+  ///     strokes: [
+  ///       GestureStroke(
+  ///         path: [GesturePoint(500, 1500), GesturePoint(500, 300)],
+  ///         startTime: 0,
+  ///         duration: 400,
+  ///       ),
+  ///     ],
+  ///   ),
+  /// );
+  /// ```
+  static Future<bool> dispatchGesture(GestureDescription gesture) async {
+    try {
+      return await _methodChannel.invokeMethod<bool?>(
+            'dispatchGesture',
+            {'strokes': gesture.toJson()},
+          ) ??
+          false;
+    } on PlatformException catch (error) {
+      log("$error");
+      return false;
     }
   }
 

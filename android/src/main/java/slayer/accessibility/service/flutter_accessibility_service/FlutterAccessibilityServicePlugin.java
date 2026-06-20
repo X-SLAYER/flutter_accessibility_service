@@ -23,6 +23,7 @@ import androidx.annotation.RequiresApi;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.Map;
 
 import io.flutter.FlutterInjector;
 import io.flutter.embedding.engine.FlutterEngine;
@@ -193,6 +194,13 @@ public class FlutterAccessibilityServicePlugin implements FlutterPlugin, Activit
         } else if (call.method.equals("hideOverlayWindow")) {
             AccessibilityListener.removeOverlay();
             result.success(true);
+        } else if (call.method.equals("dispatchGesture")) {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
+                result.success(false);
+                return;
+            }
+            List<Object> strokes = call.argument("strokes");
+            AccessibilityListener.performDispatchGesture(strokes, result);
         } else {
             result.notImplemented();
         }
