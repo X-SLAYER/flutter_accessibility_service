@@ -16,7 +16,10 @@ class FlutterAccessibilityService {
       MethodChannel('x-slayer/accessibility_channel');
   static const EventChannel _eventChannel =
       EventChannel('x-slayer/accessibility_event');
+  static const EventChannel _statusChannel =
+      EventChannel('x-slayer/accessibility_status');
   static Stream<AccessibilityEvent>? _stream;
+  static Stream<bool>? _statusStream;
 
   /// stream the incoming Accessibility events
   static Stream<AccessibilityEvent> get accessStream {
@@ -26,6 +29,18 @@ class FlutterAccessibilityService {
                 (event) => AccessibilityEvent.fromMap(jsonDecode(event)),
               );
       return _stream!;
+    }
+    throw Exception("Accessibility API exclusively available on Android!");
+  }
+
+  /// Emits `true` when the accessibility service is enabled and `false` when
+  /// it is disabled. The current state is always emitted immediately on listen.
+  static Stream<bool> get onAccessibilityServiceStatusChanged {
+    if (Platform.isAndroid) {
+      _statusStream ??= _statusChannel
+          .receiveBroadcastStream()
+          .map<bool>((event) => event as bool);
+      return _statusStream!;
     }
     throw Exception("Accessibility API exclusively available on Android!");
   }

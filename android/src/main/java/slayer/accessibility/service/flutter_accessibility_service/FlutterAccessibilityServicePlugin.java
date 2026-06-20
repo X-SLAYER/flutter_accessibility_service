@@ -2,15 +2,18 @@ package slayer.accessibility.service.flutter_accessibility_service;
 
 import static slayer.accessibility.service.flutter_accessibility_service.Constants.*;
 
-import android.accessibilityservice.AccessibilityService;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.database.ContentObserver;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.accessibility.AccessibilityNodeInfo;
@@ -44,12 +47,16 @@ public class FlutterAccessibilityServicePlugin implements FlutterPlugin, Activit
 
     private static final String CHANNEL_TAG = "x-slayer/accessibility_channel";
     private static final String EVENT_TAG = "x-slayer/accessibility_event";
+    private static final String STATUS_EVENT_TAG = "x-slayer/accessibility_status";
     public static final String CACHED_TAG = "cashedAccessibilityEngine";
 
 
     private MethodChannel channel;
     private AccessibilityReceiver accessibilityReceiver;
     private EventChannel eventChannel;
+    private EventChannel statusEventChannel;
+    private ContentObserver accessibilityObserver;
+    private volatile EventChannel.EventSink statusEventSink;
     private Context context;
     private Activity mActivity;
     private boolean supportOverlay = false;
@@ -65,6 +72,34 @@ public class FlutterAccessibilityServicePlugin implements FlutterPlugin, Activit
         channel.setMethodCallHandler(this);
         eventChannel = new EventChannel(flutterPluginBinding.getBinaryMessenger(), EVENT_TAG);
         eventChannel.setStreamHandler(this);
+        statusEventChannel = new EventChannel(flutterPluginBinding.getBinaryMessenger(), STATUS_EVENT_TAG);
+        statusEventChannel.setStreamHandler(new EventChannel.StreamHandler() {
+            @Override
+            public void onListen(Object arguments, EventChannel.EventSink events) {
+                statusEventSink = events;
+                Uri uri = Settings.Secure.getUriFor(Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
+                accessibilityObserver = new ContentObserver(new Handler(Looper.getMainLooper())) {
+                    @Override
+                    public void onChange(boolean selfChange) {
+                        EventChannel.EventSink sink = statusEventSink;
+                        if (sink != null) {
+                            sink.success(Utils.isAccessibilitySettingsOn(context));
+                        }
+                    }
+                };
+                context.getContentResolver().registerContentObserver(uri, false, accessibilityObserver);
+                events.success(Utils.isAccessibilitySettingsOn(context));
+            }
+
+            @Override
+            public void onCancel(Object arguments) {
+                statusEventSink = null;
+                if (accessibilityObserver != null) {
+                    context.getContentResolver().unregisterContentObserver(accessibilityObserver);
+                    accessibilityObserver = null;
+                }
+            }
+        });
     }
 
     private final BroadcastReceiver actionsReceiver = new BroadcastReceiver() {
@@ -166,8 +201,6 @@ public class FlutterAccessibilityServicePlugin implements FlutterPlugin, Activit
     @Override
     public void onDetachedFromEngine(@NonNull FlutterPluginBinding binding) {
         channel.setMethodCallHandler(null);
-        // Null the sink first so any in-flight broadcast is dropped cleanly,
-        // then remove the stream handler (which may trigger onCancel).
         if (accessibilityReceiver != null) {
             accessibilityReceiver.setEventSink(null);
         }
@@ -176,6 +209,12 @@ public class FlutterAccessibilityServicePlugin implements FlutterPlugin, Activit
             context.unregisterReceiver(actionsReceiver);
             isReceiverRegistered = false;
         }
+        statusEventSink = null;
+        if (accessibilityObserver != null) {
+            context.getContentResolver().unregisterContentObserver(accessibilityObserver);
+            accessibilityObserver = null;
+        }
+        statusEventChannel.setStreamHandler(null);
     }
 
     @SuppressLint({"WrongConstant", "UnspecifiedRegisterReceiverFlag"})

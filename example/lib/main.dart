@@ -35,6 +35,8 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   StreamSubscription<AccessibilityEvent>? _subscription;
+  StreamSubscription<bool>? _statusSubscription;
+
   List<AccessibilityEvent?> events = [];
   DateTime eventDateTime = DateTime.now();
   bool foundSearchField = false;
@@ -55,6 +57,9 @@ class _MyAppState extends State<MyApp> {
     }
     _subscription =
         FlutterAccessibilityService.accessStream.listen((event) async {
+      if (event.packageName!.contains('slayer.accessibility.service')) {
+        return;
+      }
       setState(() {
         events.add(event);
       });
@@ -62,6 +67,18 @@ class _MyAppState extends State<MyApp> {
       // log("$event");
       // automateWikipedia(event);
       handleOverlay(event);
+    });
+  }
+
+  void handleAccessibilityStatus() {
+    if (_statusSubscription?.isPaused ?? false) {
+      _statusSubscription?.resume();
+      return;
+    }
+    _statusSubscription = FlutterAccessibilityService
+        .onAccessibilityServiceStatusChanged
+        .listen((event) {
+      log("Accessibility Status changed: $event");
     });
   }
 
@@ -75,12 +92,7 @@ class _MyAppState extends State<MyApp> {
             event.isFocused!) {
       eventDateTime = event.eventTime!;
       await FlutterAccessibilityService.showOverlayWindow(
-        const OverlayConfig().copyWith(
-          height: 800,
-          width: 800,
-          gravity: OverlayGravity.bottomRight,
-          clickableThrough: false,
-        ),
+        const OverlayConfig(),
       );
     } else if (eventDateTime.difference(event.eventTime!).inSeconds.abs() > 2 ||
         (event.eventType == EventType.typeWindowStateChanged &&
@@ -170,6 +182,7 @@ class _MyAppState extends State<MyApp> {
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
+                  spacing: 20.0,
                   children: [
                     TextButton(
                       onPressed: () async {
@@ -178,7 +191,6 @@ class _MyAppState extends State<MyApp> {
                       },
                       child: const Text("Request Permission"),
                     ),
-                    const SizedBox(height: 20.0),
                     TextButton(
                       onPressed: () async {
                         final bool res = await FlutterAccessibilityService
@@ -187,17 +199,25 @@ class _MyAppState extends State<MyApp> {
                       },
                       child: const Text("Check Permission"),
                     ),
-                    const SizedBox(height: 20.0),
                     TextButton(
                       onPressed: handleAccessibilityStream,
                       child: const Text("Start Stream"),
                     ),
-                    const SizedBox(height: 20.0),
+                    TextButton(
+                      onPressed: handleAccessibilityStatus,
+                      child: const Text("Start Status Stream"),
+                    ),
                     TextButton(
                       onPressed: () {
                         _subscription?.cancel();
                       },
                       child: const Text("Stop Stream"),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        _statusSubscription?.cancel();
+                      },
+                      child: const Text("Stop Status Stream"),
                     ),
                     TextButton(
                       onPressed: () async {
@@ -231,6 +251,19 @@ class _MyAppState extends State<MyApp> {
                   shrinkWrap: true,
                   itemCount: events.length,
                   itemBuilder: (_, index) => ListTile(
+                    onTap: () {
+                      final haveActions = (events[index]!.subNodes ?? [])
+                          .map((e) => e.actions)
+                          .expand((element) => element!)
+                          .contains(NodeAction.actionClick);
+                      final firstElement = events[index]!.subNodes!.firstWhere(
+                          (element) => element.actions!
+                              .contains(NodeAction.actionClick));
+                      if (haveActions) {
+                        log('$firstElement');
+                        doAction(firstElement, NodeAction.actionClick);
+                      }
+                    },
                     title: Text(events[index]!.packageName!),
                     subtitle: Text(
                       (events[index]!.subNodes ?? [])
