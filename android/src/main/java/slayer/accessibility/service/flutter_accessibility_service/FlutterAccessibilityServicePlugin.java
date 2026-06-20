@@ -55,6 +55,7 @@ public class FlutterAccessibilityServicePlugin implements FlutterPlugin, Activit
     private boolean supportOverlay = false;
     private boolean isReceiverRegistered = false;
     private Result pendingResult;
+    private Result pendingActionsResult;
     final int REQUEST_CODE_FOR_ACCESSIBILITY = 167;
 
     @Override
@@ -69,8 +70,15 @@ public class FlutterAccessibilityServicePlugin implements FlutterPlugin, Activit
     private final BroadcastReceiver actionsReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            List<Integer> actions = intent.getIntegerArrayListExtra("actions");
-            pendingResult.success(actions);
+            if (isReceiverRegistered) {
+                context.unregisterReceiver(this);
+                isReceiverRegistered = false;
+            }
+            if (pendingActionsResult != null) {
+                List<Integer> actions = intent.getIntegerArrayListExtra("actions");
+                pendingActionsResult.success(actions);
+                pendingActionsResult = null;
+            }
         }
     };
 
@@ -79,14 +87,19 @@ public class FlutterAccessibilityServicePlugin implements FlutterPlugin, Activit
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     @Override
     public void onMethodCall(@NonNull MethodCall call, @NonNull Result result) {
-        pendingResult = result;
         if (call.method.equals("isAccessibilityPermissionEnabled")) {
             result.success(Utils.isAccessibilitySettingsOn(context));
         } else if (call.method.equals("requestAccessibilityPermission")) {
+            pendingResult = result;
             Intent intent = new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS);
             mActivity.startActivityForResult(intent, REQUEST_CODE_FOR_ACCESSIBILITY);
         } else if (call.method.equals("getSystemActions")) {
             if (Utils.isAccessibilitySettingsOn(context)) {
+                if (isReceiverRegistered) {
+                    context.unregisterReceiver(actionsReceiver);
+                    isReceiverRegistered = false;
+                }
+                pendingActionsResult = result;
                 IntentFilter filter = new IntentFilter(BROD_SYSTEM_GLOBAL_ACTIONS);
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                     context.registerReceiver(actionsReceiver, filter, Context.RECEIVER_EXPORTED);
@@ -94,9 +107,9 @@ public class FlutterAccessibilityServicePlugin implements FlutterPlugin, Activit
                     context.registerReceiver(actionsReceiver, filter);
                 }
                 isReceiverRegistered = true;
-                Intent intent = new Intent(context, AccessibilityListener.class);
-                intent.putExtra(INTENT_SYSTEM_GLOBAL_ACTIONS, true);
-                context.startService(intent);
+                Intent serviceIntent = new Intent(context, AccessibilityListener.class);
+                serviceIntent.putExtra(INTENT_SYSTEM_GLOBAL_ACTIONS, true);
+                context.startService(serviceIntent);
             } else {
                 result.error("SDK_INT_ERROR", "Invalid SDK_INT", null);
             }
