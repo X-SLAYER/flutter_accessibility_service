@@ -6,6 +6,7 @@ import 'package:flutter_accessibility_service/accessibility_event.dart';
 import 'package:flutter_accessibility_service/config/overlay_config.dart';
 import 'package:flutter_accessibility_service/constants.dart';
 import 'package:flutter_accessibility_service/flutter_accessibility_service.dart';
+import 'package:flutter_accessibility_service/gesture_description.dart';
 
 import 'package:flutter_accessibility_service_example/overlay.dart';
 
@@ -233,6 +234,71 @@ class _MyAppState extends State<MyApp> {
                         log('$list');
                       },
                       child: const Text("List GlobalActions"),
+                    ),
+                    TextButton(
+                      onPressed: () async {
+                        // Tap at the center of a typical screen (500, 1000)
+                        final bool ok =
+                            await FlutterAccessibilityService.dispatchGesture(
+                          const GestureDescription(
+                            strokes: [
+                              GestureStroke(
+                                path: [GesturePoint(500, 1000)],
+                                startTime: 0,
+                                duration: 100,
+                              ),
+                            ],
+                          ),
+                        );
+                        log('Tap gesture result: $ok');
+                      },
+                      child: const Text("Tap Gesture"),
+                    ),
+                    TextButton(
+                      onPressed: () async {
+                        // Swipe up: from (500, 1500) to (500, 300) over 400 ms
+                        final bool ok =
+                            await FlutterAccessibilityService.dispatchGesture(
+                          const GestureDescription(
+                            strokes: [
+                              GestureStroke(
+                                path: [
+                                  GesturePoint(500, 1500),
+                                  GesturePoint(500, 300),
+                                ],
+                                startTime: 0,
+                                duration: 400,
+                              ),
+                            ],
+                          ),
+                        );
+                        log('Swipe up gesture result: $ok');
+                      },
+                      child: const Text("Swipe Up"),
+                    ),
+                    TextButton(
+                      onPressed: () async {
+                        // Double-tap at (500, 1000): two quick strokes 50 ms apart
+                        final bool ok =
+                            await FlutterAccessibilityService.dispatchGesture(
+                          const GestureDescription(
+                            strokes: [
+                              GestureStroke(
+                                path: [GesturePoint(500, 1000)],
+                                startTime: 0,
+                                duration: 100,
+                              ),
+                              GestureStroke(
+                                path: [GesturePoint(500, 1000)],
+                                startTime: 150,
+                                duration: 100,
+                              ),
+                            ],
+                          ),
+                        );
+                        log('Double-tap gesture result: $ok');
+                      },
+                      child: const Text("Double Tap"),
                     ),
                     TextButton(
                       onPressed: () {

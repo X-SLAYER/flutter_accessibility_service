@@ -43,6 +43,7 @@ Create Accesiblity config file named `accessibilityservice.xml` inside `res/xml`
     android:notificationTimeout="300"
     android:accessibilityFlags="flagDefault|flagIncludeNotImportantViews|flagRequestTouchExplorationMode|flagRequestEnhancedWebAccessibility|flagReportViewIds|flagRetrieveInteractiveWindows"
     android:canRetrieveWindowContent="true"
+    android:canPerformGestures="true"
 >
 </accessibility-service>
 
@@ -215,4 +216,97 @@ Returns a list of system actions available in the system right now.
 ```dart
   final list = await FlutterAccessibilityService.getSystemActions();
   print(list); // [GlobalAction.globalActionAccessibilityAllApps,GlobalAction.globalActionTakeScreenshot .....]
+```
+
+#### Dispatch Gestures
+
+Programmatically inject touch gestures (tap, swipe, double-tap, etc.) on the screen through the accessibility service.
+
+> **Requires Android 7.0 (API 24) or higher.** Returns `true` when the gesture completes, `false` if it was cancelled or the service is not running.
+
+A gesture is made up of one or more `GestureStroke`s. Each stroke has:
+
+| Parameter   | Type                  | Description                                        |
+| ----------- | --------------------- | -------------------------------------------------- |
+| `path`      | `List<GesturePoint>`  | Ordered screen coordinates (pixels) for the stroke |
+| `startTime` | `int` (ms)            | Delay after gesture start before this stroke fires |
+| `duration`  | `int` (ms)            | How long the stroke lasts                          |
+
+**Tap**
+
+```dart
+await FlutterAccessibilityService.dispatchGesture(
+  const GestureDescription(
+    strokes: [
+      GestureStroke(
+        path: [GesturePoint(500, 1000)],
+        startTime: 0,
+        duration: 100,
+      ),
+    ],
+  ),
+);
+```
+
+**Swipe up**
+
+```dart
+await FlutterAccessibilityService.dispatchGesture(
+  const GestureDescription(
+    strokes: [
+      GestureStroke(
+        path: [
+          GesturePoint(500, 1500), // start
+          GesturePoint(500, 300),  // end
+        ],
+        startTime: 0,
+        duration: 400,
+      ),
+    ],
+  ),
+);
+```
+
+**Double-tap** (two strokes at the same point, 150 ms apart)
+
+```dart
+await FlutterAccessibilityService.dispatchGesture(
+  const GestureDescription(
+    strokes: [
+      GestureStroke(
+        path: [GesturePoint(500, 1000)],
+        startTime: 0,
+        duration: 100,
+      ),
+      GestureStroke(
+        path: [GesturePoint(500, 1000)],
+        startTime: 150,
+        duration: 100,
+      ),
+    ],
+  ),
+);
+```
+
+**Pinch-to-zoom** (two simultaneous strokes moving in opposite directions)
+
+```dart
+await FlutterAccessibilityService.dispatchGesture(
+  const GestureDescription(
+    strokes: [
+      // Finger 1: moves outward from centre-left
+      GestureStroke(
+        path: [GesturePoint(400, 1000), GesturePoint(100, 1000)],
+        startTime: 0,
+        duration: 300,
+      ),
+      // Finger 2: moves outward from centre-right
+      GestureStroke(
+        path: [GesturePoint(600, 1000), GesturePoint(900, 1000)],
+        startTime: 0,
+        duration: 300,
+      ),
+    ],
+  ),
+);
 ```

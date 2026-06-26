@@ -1,3 +1,9 @@
+# 1.2.0-beta.1
+
+- Add `dispatchGesture` support for simulating tap, swipe, and multi-stroke gestures via the accessibility service (Android 7.0 / API 24+)
+- Add `GestureDescription`, `GestureStroke`, and `GesturePoint` models
+- Enable `canPerformGestures` capability in the accessibility service config
+
 # 1.1.0
 
 - Improve event sink stability
