@@ -77,6 +77,8 @@ So JSON keys in `AccessibilityListener` (`mapId`, `capturedText`, `parentActions
 
 The overlay runs a **separate Flutter engine** started in `onAttachedToActivity` from a Dart entry point that must be named exactly `accessibilityOverlay` and annotated `@pragma("vm:entry-point")` in the consumer's `main.dart`. If missing, `supportOverlay` is false and `showOverlayWindow` returns false.
 
+**The service can connect before any Activity has run.** After a reboot, reinstall or process death, Android re-binds `AccessibilityListener` directly. The plugin isn't attached to an Activity and the overlay engine cache is empty. `onServiceConnected` must never depend on the engine; the overlay `FlutterView` is created lazily in `showOverlay` (`ensureOverlayView`). Any static helper that uses `instance`, `mWindowManager` or `mOverlayView` must null-check them and log when it gives up, rather than dropping the call silently.
+
 ### Consumer setup (documented in README)
 
 Apps must declare `AccessibilityListener` as a `<service>` with `BIND_ACCESSIBILITY_SERVICE` and an `accessibilityservice.xml` (see `example/android/...`). `canPerformGestures="true"` is required for `dispatchGesture`; `canRetrieveWindowContent="true"` for node data.

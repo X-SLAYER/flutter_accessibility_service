@@ -151,12 +151,8 @@ public class FlutterAccessibilityServicePlugin implements FlutterPlugin, Activit
             }
         } else if (call.method.equals("performGlobalAction")) {
             Integer actionId = call.argument("action");
-            if (Utils.isAccessibilitySettingsOn(context)) {
-                final Intent i = new Intent(context, AccessibilityListener.class);
-                i.putExtra(INTENT_GLOBAL_ACTION, true);
-                i.putExtra(INTENT_GLOBAL_ACTION_ID, actionId);
-                context.startService(i);
-                result.success(true);
+            if (actionId != null && Utils.isAccessibilitySettingsOn(context)) {
+                result.success(AccessibilityListener.performGlobal(actionId));
             } else {
                 result.success(false);
             }
@@ -186,8 +182,7 @@ public class FlutterAccessibilityServicePlugin implements FlutterPlugin, Activit
                 Integer width = call.argument("width");
                 Integer height = call.argument("height");
                 Integer gravity = call.argument("gravity");
-                AccessibilityListener.showOverlay(width, height, gravity, clickableThrough);
-                result.success(true);
+                result.success(AccessibilityListener.showOverlay(width, height, gravity, clickableThrough));
             } else {
                 result.success(false);
             }
