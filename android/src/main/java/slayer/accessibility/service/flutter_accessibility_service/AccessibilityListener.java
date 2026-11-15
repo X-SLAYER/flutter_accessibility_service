@@ -6,6 +6,7 @@ import static slayer.accessibility.service.flutter_accessibility_service.Flutter
 import android.accessibilityservice.AccessibilityService;
 import android.accessibilityservice.GestureDescription;
 import android.annotation.TargetApi;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
@@ -33,17 +34,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.HashSet;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 import io.flutter.plugin.common.MethodChannel;
 
 import io.flutter.embedding.android.FlutterTextureView;
 import io.flutter.embedding.android.FlutterView;
+import io.flutter.embedding.engine.FlutterEngine;
 import io.flutter.embedding.engine.FlutterEngineCache;
 
 
 public class AccessibilityListener extends AccessibilityService {
+    private static final String TAG = "AccessibilityListener";
     private static AccessibilityListener instance;
     private static WindowManager mWindowManager;
     private static FlutterView mOverlayView;
@@ -131,6 +133,8 @@ public class AccessibilityListener extends AccessibilityService {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        // START_STICKY restarts deliver a null intent.
+        if (intent == null) return START_STICKY;
         boolean globalAction = intent.getBooleanExtra(INTENT_GLOBAL_ACTION, false);
         boolean systemActions = intent.getBooleanExtra(INTENT_SYSTEM_GLOBAL_ACTIONS, false);
         if (systemActions && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
@@ -210,16 +214,49 @@ public class AccessibilityListener extends AccessibilityService {
     protected void onServiceConnected() {
         instance = this;
         mWindowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
-        mOverlayView = new FlutterView(getApplicationContext(), new FlutterTextureView(getApplicationContext()));
-        mOverlayView.attachToFlutterEngine(Objects.requireNonNull(FlutterEngineCache.getInstance().get(CACHED_TAG)));
-        mOverlayView.setFitsSystemWindows(true);
-        mOverlayView.setFocusable(true);
-        mOverlayView.setFocusableInTouchMode(true);
-        mOverlayView.setBackgroundColor(Color.TRANSPARENT);
+        // The overlay engine is created by the plugin in onAttachedToActivity(). When the
+        // process is started by the accessibility binding (reboot, reinstall, process death)
+        // no Activity has run yet, so the engine may be missing. The overlay is optional:
+        // don't crash, build the view lazily in showOverlay() once the engine exists.
+        if (!ensureOverlayView()) {
+            Log.w(TAG, "onServiceConnected: no cached overlay engine yet; overlay deferred until the app is opened");
+        }
     }
 
+    /**
+     * Creates {@link #mOverlayView} if needed. Returns false when the overlay engine
+     * is not available (app's Activity has not run, or no `accessibilityOverlay` entry point).
+     */
+    private static boolean ensureOverlayView() {
+        if (mOverlayView != null) return true;
+        if (instance == null) return false;
+        FlutterEngine engine = FlutterEngineCache.getInstance().get(CACHED_TAG);
+        if (engine == null) return false;
+        Context ctx = instance.getApplicationContext();
+        FlutterView view = new FlutterView(ctx, new FlutterTextureView(ctx));
+        view.attachToFlutterEngine(engine);
+        view.setFitsSystemWindows(true);
+        view.setFocusable(true);
+        view.setFocusableInTouchMode(true);
+        view.setBackgroundColor(Color.TRANSPARENT);
+        mOverlayView = view;
+        return true;
+    }
+
+    /**
+     * Shows the overlay. Returns false if the service is not connected or the overlay
+     * engine is unavailable.
+     */
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP_MR1)
-    static public void showOverlay(int width, int height, int gravity, boolean clickableThrough) {
+    static public boolean showOverlay(int width, int height, int gravity, boolean clickableThrough) {
+        if (instance == null || mWindowManager == null) {
+            Log.w(TAG, "showOverlay: accessibility service is not connected");
+            return false;
+        }
+        if (!ensureOverlayView()) {
+            Log.w(TAG, "showOverlay: overlay engine unavailable");
+            return false;
+        }
         if (!isOverlayShown) {
             WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
             lp.type = WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY;
@@ -236,20 +273,42 @@ public class AccessibilityListener extends AccessibilityService {
             mWindowManager.addView(mOverlayView, lp);
             isOverlayShown = true;
         }
+        return true;
+    }
+
+    /**
+     * Performs a global action on the connected service. Returns false (and logs) when
+     * the service is enabled in settings but not connected, instead of silently dropping it.
+     */
+    static public boolean performGlobal(int actionId) {
+        if (instance == null) {
+            Log.w(TAG, "performGlobalAction: accessibility service is enabled but not connected; action dropped");
+            return false;
+        }
+        return instance.performGlobalAction(actionId);
     }
 
     static public void removeOverlay() {
-        if (isOverlayShown) {
-            mWindowManager.removeView(mOverlayView);
-            isOverlayShown = false;
+        if (isOverlayShown && mWindowManager != null && mOverlayView != null) {
+            try {
+                mWindowManager.removeView(mOverlayView);
+            } catch (IllegalArgumentException e) {
+                Log.w(TAG, "removeOverlay: view was not attached", e);
+            }
         }
+        isOverlayShown = false;
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        instance = null;
         removeOverlay();
+        if (mOverlayView != null) {
+            mOverlayView.detachFromFlutterEngine();
+            mOverlayView = null;
+        }
+        mWindowManager = null;
+        instance = null;
         SharedPreferences sharedPreferences = getSharedPreferences(SHARED_PREFS_TAG, MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPreferences.edit();
         editor.remove(ACCESSIBILITY_NODE).apply();
@@ -263,6 +322,7 @@ public class AccessibilityListener extends AccessibilityService {
     @RequiresApi(api = Build.VERSION_CODES.N)
     public static void performDispatchGesture(List<Object> strokes, MethodChannel.Result result) {
         if (instance == null) {
+            Log.w(TAG, "dispatchGesture: accessibility service is enabled but not connected; gesture dropped");
             result.success(false);
             return;
         }
@@ -286,7 +346,9 @@ public class AccessibilityListener extends AccessibilityService {
                 gestureBuilder.addStroke(new GestureDescription.StrokeDescription(path, startTime, duration));
             }
 
-            instance.dispatchGesture(gestureBuilder.build(), new AccessibilityService.GestureResultCallback() {
+            // dispatchGesture returns false (and never invokes the callback) when the
+            // gesture is rejected, so the Dart future must be completed here.
+            boolean dispatched = instance.dispatchGesture(gestureBuilder.build(), new AccessibilityService.GestureResultCallback() {
                 @Override
                 public void onCompleted(GestureDescription gestureDescription) {
                     new Handler(Looper.getMainLooper()).post(() -> result.success(true));
@@ -297,6 +359,10 @@ public class AccessibilityListener extends AccessibilityService {
                     new Handler(Looper.getMainLooper()).post(() -> result.success(false));
                 }
             }, null);
+            if (!dispatched) {
+                Log.w(TAG, "dispatchGesture: rejected by the system (is canPerformGestures enabled?)");
+                result.success(false);
+            }
         } catch (Exception e) {
             Log.e("GESTURE", "performDispatchGesture: " + e.getMessage());
             result.success(false);
